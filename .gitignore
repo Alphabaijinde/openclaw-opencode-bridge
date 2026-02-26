@@ -1,0 +1,19 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Env and secrets
+.env
+.env.local
+.env.*.local
+
+# Runtime artifacts
+*.log
+*.pid
+.DS_Store
+
+# Bridge/OpenClaw local runtime data
+opencode-data/
+
+# Add-on local binary artifact
+deploy/openclaw-addon/docker/opencode/opencode

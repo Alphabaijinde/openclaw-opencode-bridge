@@ -1,0 +1,81 @@
+# Place this file in the root of the official OpenClaw repo (next to docker-compose.yml)
+# or use it with: docker compose -f docker-compose.yml -f /path/to/this/file ...
+#
+# It adds:
+# - opencode server (containerized, using your local opencode binary packaged into image)
+# - OpenAI-compatible bridge for OpenClaw custom provider
+# - Feishu plugin env vars for OpenClaw gateway
+
+services:
+  openclaw-gateway:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Feishu / Lark plugin (after installing @openclaw/feishu in gateway)
+      FEISHU_APP_ID: ${FEISHU_APP_ID:-}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET:-}
+      FEISHU_VERIFICATION_TOKEN: ${FEISHU_VERIFICATION_TOKEN:-}
+      FEISHU_ENCRYPT_KEY: ${FEISHU_ENCRYPT_KEY:-}
+
+  openclaw-cli:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      FEISHU_APP_ID: ${FEISHU_APP_ID:-}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET:-}
+      FEISHU_VERIFICATION_TOKEN: ${FEISHU_VERIFICATION_TOKEN:-}
+      FEISHU_ENCRYPT_KEY: ${FEISHU_ENCRYPT_KEY:-}
+
+  opencode:
+    build:
+      context: ./docker/opencode
+      dockerfile: Dockerfile
+    container_name: opencode
+    restart: unless-stopped
+    environment:
+      # Official opencode docs: Basic auth enabled by default, username defaults to "opencode"
+      OPENCODE_AUTH_PASSWORD: ${OPENCODE_AUTH_PASSWORD:?set_in_.env}
+      OPENCODE_AUTH_USERNAME: ${OPENCODE_AUTH_USERNAME:-opencode}
+      # Optional provider/model defaults for your opencode instance
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    volumes:
+      # Optional: reuse host opencode install/plugins (recommended if your "free AI" path depends on local plugins)
+      - ${OPENCODE_INSTALL_DIR:-./opencode-home}:/root/.opencode:ro
+      # Persist opencode state/config inside the OpenClaw repo folder
+      - ./opencode-data/config:/root/.config/opencode
+      - ./opencode-data/share:/root/.local/share/opencode
+      # Optional workdir that opencode can access (adjust to your needs)
+      - ./:/workspace
+    command: ["serve", "--hostname", "0.0.0.0", "--port", "4096"]
+    networks:
+      - default
+
+  opencode-bridge:
+    build:
+      context: ${OPENCODE_BRIDGE_CONTEXT:-./opencode-bridge}
+      dockerfile: Dockerfile
+    container_name: opencode-bridge
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8787
+      BRIDGE_API_KEY: ${OPENCODE_BRIDGE_API_KEY:?set_in_.env}
+      OPENAI_MODEL_ID: ${OPENCODE_OPENAI_MODEL_ID:-opencode-local}
+      OPENCODE_BASE_URL: http://opencode:4096
+      OPENCODE_AUTH_MODE: basic
+      OPENCODE_AUTH_USERNAME: ${OPENCODE_AUTH_USERNAME:-opencode}
+      OPENCODE_AUTH_PASSWORD: ${OPENCODE_AUTH_PASSWORD:?set_in_.env}
+      OPENCODE_DIRECTORY: ${OPENCODE_DIRECTORY:-/workspace}
+      OPENCODE_PROVIDER_ID: ${OPENCODE_PROVIDER_ID:-}
+      OPENCODE_MODEL_ID: ${OPENCODE_MODEL_ID:-}
+      OPENCODE_AGENT: ${OPENCODE_AGENT:-}
+      OPENCODE_SYSTEM: ${OPENCODE_SYSTEM:-}
+      MODEL_MAP_JSON: ${OPENCODE_MODEL_MAP_JSON:-}
+    depends_on:
+      - opencode
+    ports:
+      - "${OPENCODE_BRIDGE_PORT:-8787}:8787"
+    networks:
+      - default
