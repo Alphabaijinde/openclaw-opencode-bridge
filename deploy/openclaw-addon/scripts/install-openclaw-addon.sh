@@ -156,6 +156,8 @@ set_env_default "${ENV_FILE}" "OPENCODE_INSTALL_DIR" "${HOME}/.opencode"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_API_KEY" "$(random_hex)"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PORT" "8787"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_CONTEXT" "${BRIDGE_CONTEXT}"
+set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_IMAGE" "ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest"
+set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PULL_POLICY" "always"
 set_env_default "${ENV_FILE}" "OPENCODE_OPENAI_MODEL_ID" "opencode-local"
 set_env_default "${ENV_FILE}" "OPENCODE_DIRECTORY" "/workspace"
 set_env_default "${ENV_FILE}" "OPENCODE_PROVIDER_ID" "opencode"
@@ -191,7 +193,7 @@ Opencode binary: ${OPENCODE_BIN}
 
 Next:
   cd ${OPENCLAW_DIR}
-  docker compose build opencode opencode-bridge
+  docker compose build opencode
   docker compose up -d
   docker compose exec opencode opencode auth login
   ${ADDON_DIR}/scripts/select-opencode-model.sh ${OPENCLAW_DIR}

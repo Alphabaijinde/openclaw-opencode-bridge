@@ -16,7 +16,7 @@ This add-on extends the official OpenClaw Docker deployment with:
 Clone this bridge repo, run environment check, then one installer command:
 
 ```bash
-git clone https://github.com/<you>/openclaw-opencode-bridge.git
+git clone https://github.com/Alphabaijinde/openclaw-opencode-bridge.git
 cd openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/check-environment.sh
 ./scripts/install-openclaw-addon.sh /path/to/openclaw
@@ -38,8 +38,20 @@ Then start the stack:
 
 ```bash
 cd /path/to/openclaw
-docker compose build opencode opencode-bridge
+docker compose build opencode
 docker compose up -d
+```
+
+By default, `opencode-bridge` uses prebuilt image:
+
+```bash
+OPENCODE_BRIDGE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest
+```
+
+If you want local bridge source build instead:
+
+```bash
+docker compose build opencode-bridge
 ```
 
 ## 2) Manual path (advanced)
