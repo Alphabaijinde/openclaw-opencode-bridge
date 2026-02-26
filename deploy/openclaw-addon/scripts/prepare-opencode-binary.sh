@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC="${HOME}/.opencode/bin/opencode"
+SRC="${1:-${OPENCODE_BINARY_PATH:-${HOME}/.opencode/bin/opencode}}"
 DST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docker/opencode"
 DST="${DST_DIR}/opencode"
 
 if [[ ! -f "${SRC}" ]]; then
   echo "Missing local opencode binary: ${SRC}" >&2
+  exit 1
+fi
+if [[ ! -x "${SRC}" ]]; then
+  echo "opencode binary is not executable: ${SRC}" >&2
   exit 1
 fi
 

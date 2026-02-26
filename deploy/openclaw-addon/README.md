@@ -9,9 +9,39 @@ This add-on extends the official OpenClaw Docker deployment with:
 ## What this add-on assumes
 
 - You deploy OpenClaw using the **official** `docker-compose.yml` from the OpenClaw repo.
-- You already installed `opencode` locally on the host machine (the binary will be copied into the Docker build context).
+- You already installed `opencode` locally on the host machine.
 
-## 1) Clone OpenClaw (official)
+## 1) Quick path (recommended)
+
+Clone both repos, then run one installer command:
+
+```bash
+git clone https://github.com/openclaw/openclaw.git
+git clone https://github.com/<you>/openclaw-opencode-bridge.git
+cd openclaw-opencode-bridge/deploy/openclaw-addon
+./scripts/install-openclaw-addon.sh /path/to/openclaw
+```
+
+What the installer does:
+
+- prepares `opencode` binary for Docker build context
+- installs `docker-compose.override.yml` and `docker/opencode/` into OpenClaw repo
+- creates/updates OpenClaw `.env` with required `OPENCODE_*` defaults and generated secrets
+- sets `OPENCODE_BRIDGE_CONTEXT` to this bridge repo path
+
+Then start the stack:
+
+```bash
+cd /path/to/openclaw
+docker compose build opencode opencode-bridge
+docker compose up -d
+```
+
+## 2) Manual path (advanced)
+
+If you do not want the installer script, do this manually:
+
+1) Clone OpenClaw and prepare `.env`:
 
 ```bash
 git clone https://github.com/openclaw/openclaw.git
@@ -19,64 +49,26 @@ cd openclaw
 cp .env.example .env
 ```
 
-## 2) Copy this add-on into the OpenClaw repo
+2) Copy add-on files into OpenClaw repo root:
 
-Copy these into the OpenClaw repo root:
+ - `docker-compose.override.yml`
+ - `docker/opencode/`
 
-- `docker-compose.override.yml`
-- `docker/opencode/`
-
-Also make sure the bridge repo is available from the OpenClaw repo root, for example:
-
-```bash
-git clone https://github.com/<you>/openclaw-opencode-bridge.git ./opencode-bridge
-```
-
-Then set `OPENCODE_BRIDGE_CONTEXT=./opencode-bridge` in OpenClaw `.env` (or use an absolute path if you prefer).
-
-## 3) Prepare the opencode binary for Docker build
+3) Prepare `opencode` binary:
 
 ```bash
 cd /path/to/openclaw-opencode-bridge/deploy/openclaw-addon
-chmod +x scripts/prepare-opencode-binary.sh
 ./scripts/prepare-opencode-binary.sh
 ```
 
-Then copy `docker/opencode/` into the OpenClaw repo (if you haven't yet).
+4) Append values from `.env.additions.example` into OpenClaw `.env`.
 
-## 4) Add env vars to OpenClaw `.env`
-
-Append values from `.env.additions.example` to the OpenClaw `.env`.
-
-At minimum:
-
-```bash
-OPENCODE_AUTH_PASSWORD=change-me
-OPENCODE_BRIDGE_API_KEY=change-me
-FEISHU_APP_ID=cli_xxx
-FEISHU_APP_SECRET=xxx
-FEISHU_VERIFICATION_TOKEN=xxx
-FEISHU_ENCRYPT_KEY=
-```
-
-If you want to use upstream paid model keys with opencode, set them (for example `OPENAI_API_KEY`).
-
-If your goal is to use **opencode's free AI path** (not OpenAI/Anthropic official API keys), you can leave upstream model keys empty and do `opencode auth login` inside the `opencode` container after startup.
-
-## 5) Build and start the stack
-
-From the OpenClaw repo root:
-
-```bash
-docker compose build opencode opencode-bridge
-docker compose up -d
-```
-
-## 5.1) Use opencode free AI (important for your case)
+## 3) Use opencode free AI (important for your case)
 
 Do this **instead of** setting `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`:
 
 ```bash
+cd /path/to/openclaw
 docker compose exec opencode opencode auth login
 docker compose exec opencode opencode auth list
 docker compose exec opencode opencode models
@@ -100,7 +92,7 @@ Notes:
 - `./opencode-data/share` persists `opencode` auth credentials across restarts.
 - The override file mounts `${OPENCODE_INSTALL_DIR}` to `/root/.opencode` so local plugins/runtime can be reused in the container (useful if your free AI path depends on plugins). Default is `./opencode-home`.
 
-## 6) Enable Feishu plugin in OpenClaw
+## 4) Enable Feishu plugin in OpenClaw
 
 Most OpenClaw images already include `@openclaw/feishu` as a stock plugin. Enable it:
 
@@ -116,7 +108,7 @@ docker compose run --rm openclaw-cli plugins install @openclaw/feishu
 docker compose restart openclaw-gateway
 ```
 
-## 7) Configure OpenClaw Custom Provider (UI)
+## 5) Configure OpenClaw Custom Provider (UI)
 
 Add a Custom Provider in the OpenClaw UI:
 
@@ -129,7 +121,7 @@ Practical note:
 - OpenClaw backend (`openclaw-gateway`) can reach `opencode-bridge` by service name.
 - If the provider call is made from browser directly in your setup, use the host-mapped port (`http://localhost:8787/v1`).
 
-## 8) Configure Feishu app (WebSocket mode)
+## 6) Configure Feishu app (WebSocket mode)
 
 In Feishu developer console:
 
