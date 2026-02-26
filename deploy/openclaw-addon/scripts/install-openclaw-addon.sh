@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--non-interactive]
+  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--non-interactive] [--auto-install] [--yes]
 
 What it does:
   0) Checks local environment prerequisites
@@ -29,6 +29,8 @@ OPENCODE_BIN="${OPENCODE_BINARY_PATH:-${OPENCODE_BIN_DEFAULT}}"
 BRIDGE_CONTEXT="${OPENCODE_BRIDGE_CONTEXT:-${BRIDGE_ROOT}}"
 OPENCLAW_REPO_URL="https://github.com/openclaw/openclaw.git"
 NON_INTERACTIVE=0
+AUTO_INSTALL=0
+ASSUME_YES=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -48,6 +50,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --non-interactive)
       NON_INTERACTIVE=1
+      shift
+      ;;
+    --auto-install)
+      AUTO_INSTALL=1
+      shift
+      ;;
+    --yes)
+      ASSUME_YES=1
       shift
       ;;
     *)
@@ -117,7 +127,14 @@ prompt_with_default() {
 }
 
 if [[ -x "${SCRIPT_DIR}/check-environment.sh" ]]; then
-  "${SCRIPT_DIR}/check-environment.sh" "${OPENCLAW_DIR}" || exit 1
+  check_args=("${OPENCLAW_DIR}")
+  if [[ "${AUTO_INSTALL}" -eq 1 ]]; then
+    check_args+=("--auto-install")
+  fi
+  if [[ "${ASSUME_YES}" -eq 1 ]]; then
+    check_args+=("--yes")
+  fi
+  "${SCRIPT_DIR}/check-environment.sh" "${check_args[@]}" || exit 1
 fi
 
 if [[ ! -d "${OPENCLAW_DIR}" ]]; then

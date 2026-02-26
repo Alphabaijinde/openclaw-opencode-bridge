@@ -26,6 +26,9 @@ Notes:
 
 - If `/path/to/openclaw` does not exist, installer will clone official OpenClaw automatically.
 - Installer asks for `OPENCODE_PROVIDER_ID` / `OPENCODE_MODEL_ID` and writes `.env`.
+- If dependencies are missing, you can try auto-install mode:
+  - `./scripts/install-openclaw-addon.sh /path/to/openclaw --auto-install`
+  - add `--yes` for non-interactive package installation.
 
 What the installer does:
 
@@ -53,6 +56,12 @@ If you want local bridge source build instead:
 ```bash
 docker compose build opencode-bridge
 ```
+
+## 1.1) Container image sources (important)
+
+- `openclaw-gateway` / `openclaw-cli`: OpenClaw official image (`OPENCLAW_IMAGE`, default `ghcr.io/openclaw/openclaw:latest`).
+- `opencode`: built locally from your host opencode binary (`docker/opencode/opencode`).
+- `opencode-bridge`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`).
 
 ## 2) Manual path (advanced)
 
