@@ -16,6 +16,12 @@ services:
       FEISHU_APP_SECRET: ${FEISHU_APP_SECRET:-}
       FEISHU_VERIFICATION_TOKEN: ${FEISHU_VERIFICATION_TOKEN:-}
       FEISHU_ENCRYPT_KEY: ${FEISHU_ENCRYPT_KEY:-}
+      HTTP_PROXY: ${HOST_HTTP_PROXY:-}
+      HTTPS_PROXY: ${HOST_HTTPS_PROXY:-}
+      NO_PROXY: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
+      http_proxy: ${HOST_HTTP_PROXY:-}
+      https_proxy: ${HOST_HTTPS_PROXY:-}
+      no_proxy: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
 
   openclaw-cli:
     extra_hosts:
@@ -25,11 +31,21 @@ services:
       FEISHU_APP_SECRET: ${FEISHU_APP_SECRET:-}
       FEISHU_VERIFICATION_TOKEN: ${FEISHU_VERIFICATION_TOKEN:-}
       FEISHU_ENCRYPT_KEY: ${FEISHU_ENCRYPT_KEY:-}
+      HTTP_PROXY: ${HOST_HTTP_PROXY:-}
+      HTTPS_PROXY: ${HOST_HTTPS_PROXY:-}
+      NO_PROXY: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
+      http_proxy: ${HOST_HTTP_PROXY:-}
+      https_proxy: ${HOST_HTTPS_PROXY:-}
+      no_proxy: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
 
   opencode:
     build:
       context: ./docker/opencode
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HOST_HTTP_PROXY:-}
+        HTTPS_PROXY: ${HOST_HTTPS_PROXY:-}
+        NO_PROXY: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
     container_name: opencode
     restart: unless-stopped
     environment:
@@ -40,6 +56,12 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      HTTP_PROXY: ${HOST_HTTP_PROXY:-}
+      HTTPS_PROXY: ${HOST_HTTPS_PROXY:-}
+      NO_PROXY: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
+      http_proxy: ${HOST_HTTP_PROXY:-}
+      https_proxy: ${HOST_HTTPS_PROXY:-}
+      no_proxy: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
     volumes:
       # Optional: reuse host opencode install/plugins (recommended if your "free AI" path depends on local plugins)
       - ${OPENCODE_INSTALL_DIR:-./opencode-home}:/root/.opencode:ro
@@ -56,6 +78,10 @@ services:
     build:
       context: ${OPENCODE_BRIDGE_CONTEXT:-./opencode-bridge}
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HOST_HTTP_PROXY:-}
+        HTTPS_PROXY: ${HOST_HTTPS_PROXY:-}
+        NO_PROXY: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
     container_name: opencode-bridge
     restart: unless-stopped
     environment:
@@ -73,6 +99,12 @@ services:
       OPENCODE_AGENT: ${OPENCODE_AGENT:-}
       OPENCODE_SYSTEM: ${OPENCODE_SYSTEM:-}
       MODEL_MAP_JSON: ${OPENCODE_MODEL_MAP_JSON:-}
+      HTTP_PROXY: ${HOST_HTTP_PROXY:-}
+      HTTPS_PROXY: ${HOST_HTTPS_PROXY:-}
+      NO_PROXY: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
+      http_proxy: ${HOST_HTTP_PROXY:-}
+      https_proxy: ${HOST_HTTPS_PROXY:-}
+      no_proxy: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
     depends_on:
       - opencode
     ports:

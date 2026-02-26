@@ -88,6 +88,25 @@ Rebuild:
 docker compose build opencode
 ```
 
+Or run one-command installer:
+
+```bash
+./deploy/openclaw-addon/scripts/install-openclaw-addon.sh /path/to/openclaw
+```
+
+## Docker pull/build fails due proxy (e.g. old localhost port)
+
+Symptoms:
+- image pull/build errors like `proxyconnect tcp ... connect: connection refused`
+
+Checks:
+- run `deploy/openclaw-addon/scripts/check-environment.sh`
+- inspect docker daemon proxy settings (`docker info`)
+
+Notes:
+- Container proxy env (`HOST_HTTP_PROXY` / `HOST_HTTPS_PROXY`) is separate from Docker daemon proxy.
+- Do not hard-code old local proxy ports unless the process is actually listening there.
+
 ## Feishu plugin not taking effect
 
 Checks:

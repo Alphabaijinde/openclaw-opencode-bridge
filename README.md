@@ -4,6 +4,8 @@ This bridge exposes an OpenAI-compatible API for OpenClaw and forwards requests 
 
 ## Open Source Guide
 
+- Quick Docker install: `deploy/openclaw-addon/scripts/install-openclaw-addon.sh`
+- Environment check: `deploy/openclaw-addon/scripts/check-environment.sh`
 - Chinese playbook: `docs/OPEN_SOURCE_PLAYBOOK.zh-CN.md`
 - Release checklist (zh-CN): `docs/RELEASE_CHECKLIST.zh-CN.md`
 - Architecture: `docs/ARCHITECTURE.md`

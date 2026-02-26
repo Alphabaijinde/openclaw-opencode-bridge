@@ -4,12 +4,14 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge]
+  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--non-interactive]
 
 What it does:
+  0) Checks local environment prerequisites
   1) Prepares local opencode binary for Docker build context
-  2) Installs docker add-on files into OpenClaw repo
-  3) Upserts required OpenClaw .env keys with safe defaults
+  2) Clones OpenClaw repo if target path does not exist
+  3) Installs docker add-on files into OpenClaw repo
+  4) Upserts required OpenClaw .env keys with safe defaults
 EOF
 }
 
@@ -18,8 +20,15 @@ ADDON_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BRIDGE_ROOT="$(cd "${ADDON_DIR}/../.." && pwd)"
 
 OPENCLAW_DIR=""
-OPENCODE_BIN="${OPENCODE_BINARY_PATH:-${HOME}/.opencode/bin/opencode}"
+if command -v opencode >/dev/null 2>&1; then
+  OPENCODE_BIN_DEFAULT="$(command -v opencode)"
+else
+  OPENCODE_BIN_DEFAULT="${HOME}/.opencode/bin/opencode"
+fi
+OPENCODE_BIN="${OPENCODE_BINARY_PATH:-${OPENCODE_BIN_DEFAULT}}"
 BRIDGE_CONTEXT="${OPENCODE_BRIDGE_CONTEXT:-${BRIDGE_ROOT}}"
+OPENCLAW_REPO_URL="https://github.com/openclaw/openclaw.git"
+NON_INTERACTIVE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,6 +46,10 @@ while [[ $# -gt 0 ]]; do
       BRIDGE_CONTEXT="$2"
       shift 2
       ;;
+    --non-interactive)
+      NON_INTERACTIVE=1
+      shift
+      ;;
     *)
       if [[ -z "${OPENCLAW_DIR}" ]]; then
         OPENCLAW_DIR="$1"
@@ -52,17 +65,6 @@ done
 
 if [[ -z "${OPENCLAW_DIR}" ]]; then
   usage
-  exit 1
-fi
-
-if [[ ! -f "${OPENCLAW_DIR}/docker-compose.yml" ]]; then
-  echo "OpenClaw repo not found (missing docker-compose.yml): ${OPENCLAW_DIR}" >&2
-  exit 1
-fi
-
-if [[ ! -x "${OPENCODE_BIN}" ]]; then
-  echo "opencode binary not found or not executable: ${OPENCODE_BIN}" >&2
-  echo "Tip: install opencode first, or pass --opencode-bin /absolute/path/to/opencode" >&2
   exit 1
 fi
 
@@ -102,6 +104,37 @@ set_env_default() {
   fi
 }
 
+prompt_with_default() {
+  local label="$1"
+  local current="$2"
+  local input
+  read -r -p "${label} [${current}]: " input
+  if [[ -z "${input}" ]]; then
+    printf "%s" "${current}"
+  else
+    printf "%s" "${input}"
+  fi
+}
+
+if [[ -x "${SCRIPT_DIR}/check-environment.sh" ]]; then
+  "${SCRIPT_DIR}/check-environment.sh" "${OPENCLAW_DIR}" || exit 1
+fi
+
+if [[ ! -d "${OPENCLAW_DIR}" ]]; then
+  git clone "${OPENCLAW_REPO_URL}" "${OPENCLAW_DIR}"
+fi
+
+if [[ ! -f "${OPENCLAW_DIR}/docker-compose.yml" ]]; then
+  echo "OpenClaw repo not found (missing docker-compose.yml): ${OPENCLAW_DIR}" >&2
+  exit 1
+fi
+
+if [[ ! -x "${OPENCODE_BIN}" ]]; then
+  echo "opencode binary not found or not executable: ${OPENCODE_BIN}" >&2
+  echo "Tip: install opencode first, or pass --opencode-bin /absolute/path/to/opencode" >&2
+  exit 1
+fi
+
 ENV_FILE="${OPENCLAW_DIR}/.env"
 if [[ ! -f "${ENV_FILE}" ]]; then
   if [[ -f "${OPENCLAW_DIR}/.env.example" ]]; then
@@ -125,10 +158,29 @@ set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PORT" "8787"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_CONTEXT" "${BRIDGE_CONTEXT}"
 set_env_default "${ENV_FILE}" "OPENCODE_OPENAI_MODEL_ID" "opencode-local"
 set_env_default "${ENV_FILE}" "OPENCODE_DIRECTORY" "/workspace"
+set_env_default "${ENV_FILE}" "OPENCODE_PROVIDER_ID" "opencode"
+set_env_default "${ENV_FILE}" "OPENCODE_MODEL_ID" "minimax-m2.5-free"
+set_env_default "${ENV_FILE}" "HOST_HTTP_PROXY" ""
+set_env_default "${ENV_FILE}" "HOST_HTTPS_PROXY" ""
+set_env_default "${ENV_FILE}" "HOST_NO_PROXY" "localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal"
 set_env_default "${ENV_FILE}" "FEISHU_APP_ID" ""
 set_env_default "${ENV_FILE}" "FEISHU_APP_SECRET" ""
 set_env_default "${ENV_FILE}" "FEISHU_VERIFICATION_TOKEN" ""
 set_env_default "${ENV_FILE}" "FEISHU_ENCRYPT_KEY" ""
+
+if [[ "${NON_INTERACTIVE}" -eq 0 && -t 0 ]]; then
+  current_provider="$(grep -E '^OPENCODE_PROVIDER_ID=' "${ENV_FILE}" | tail -n1 | cut -d= -f2- || true)"
+  current_model="$(grep -E '^OPENCODE_MODEL_ID=' "${ENV_FILE}" | tail -n1 | cut -d= -f2- || true)"
+  current_provider="${current_provider:-opencode}"
+  current_model="${current_model:-minimax-m2.5-free}"
+
+  echo
+  echo "Choose default opencode model mapping for OpenClaw:"
+  provider_choice="$(prompt_with_default "OPENCODE_PROVIDER_ID" "${current_provider}")"
+  model_choice="$(prompt_with_default "OPENCODE_MODEL_ID" "${current_model}")"
+  upsert_env "${ENV_FILE}" "OPENCODE_PROVIDER_ID" "${provider_choice}"
+  upsert_env "${ENV_FILE}" "OPENCODE_MODEL_ID" "${model_choice}"
+fi
 
 cat <<EOF
 Install complete.
@@ -142,5 +194,5 @@ Next:
   docker compose build opencode opencode-bridge
   docker compose up -d
   docker compose exec opencode opencode auth login
-  docker compose exec opencode opencode models
+  ${ADDON_DIR}/scripts/select-opencode-model.sh ${OPENCLAW_DIR}
 EOF
