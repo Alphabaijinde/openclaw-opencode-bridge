@@ -9,7 +9,8 @@ This add-on extends the official OpenClaw Docker deployment with:
 ## What this add-on assumes
 
 - You deploy OpenClaw using the **official** `docker-compose.yml` from the OpenClaw repo.
-- You already installed `opencode` locally on the host machine.
+- Docker is available on the host.
+- `opencode` local installation is optional (only needed for local-opencode build mode).
 
 ## 1) Quick path (recommended)
 
@@ -41,27 +42,29 @@ Then start the stack:
 
 ```bash
 cd /path/to/openclaw
-docker compose build opencode
+docker compose pull
 docker compose up -d
 ```
 
-By default, `opencode-bridge` uses prebuilt image:
+By default, both `opencode` and `opencode-bridge` use prebuilt images:
 
 ```bash
+OPENCODE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode:latest
 OPENCODE_BRIDGE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest
 ```
 
-If you want local bridge source build instead:
+If you want local source/binary build instead:
 
 ```bash
+OPENCODE_PULL_POLICY=never docker compose build opencode
 docker compose build opencode-bridge
 ```
 
 ## 1.1) Container image sources (important)
 
 - `openclaw-gateway` / `openclaw-cli`: OpenClaw official image (`OPENCLAW_IMAGE`, default `ghcr.io/openclaw/openclaw:latest`).
-- `opencode`: built locally from your host opencode binary (`docker/opencode/opencode`).
-- `opencode-bridge`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`).
+- `opencode`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode:latest`), local build optional.
+- `opencode-bridge`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`), local build optional.
 
 ## 2) Manual path (advanced)
 
@@ -87,7 +90,13 @@ cd /path/to/openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/prepare-opencode-binary.sh
 ```
 
-4) Append values from `.env.additions.example` into OpenClaw `.env`.
+4) Set local mode in OpenClaw `.env`:
+
+```bash
+OPENCODE_PULL_POLICY=never
+```
+
+5) Append values from `.env.additions.example` into OpenClaw `.env`.
 
 ## 3) Use opencode free AI (important for your case)
 

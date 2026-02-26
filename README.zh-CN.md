@@ -19,7 +19,7 @@ cd openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/install-openclaw-addon.sh /path/to/openclaw
 
 cd /path/to/openclaw
-docker compose build opencode
+docker compose pull
 docker compose up -d
 docker compose exec opencode opencode auth login
 ../openclaw-opencode-bridge/deploy/openclaw-addon/scripts/select-opencode-model.sh /path/to/openclaw
@@ -29,7 +29,7 @@ docker compose restart opencode-bridge
 ## 产物说明
 
 - `openclaw-gateway`：使用 OpenClaw 官方镜像
-- `opencode`：由本机 `opencode` 二进制打包构建
+- `opencode`：默认使用预构建镜像 `ghcr.io/alphabaijinde/openclaw-opencode:latest`（可切换本地构建）
 - `opencode-bridge`：默认使用预构建镜像 `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`
 
 ## 文档入口

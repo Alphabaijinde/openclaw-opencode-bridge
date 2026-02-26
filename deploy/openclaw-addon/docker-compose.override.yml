@@ -39,6 +39,12 @@ services:
       no_proxy: ${HOST_NO_PROXY:-localhost,127.0.0.1,opencode,opencode-bridge,host.docker.internal}
 
   opencode:
+    # Default: use prebuilt GHCR image.
+    # For local binary build, run:
+    #   OPENCODE_PULL_POLICY=never docker compose build opencode
+    # and make sure docker/opencode/opencode exists.
+    image: ${OPENCODE_IMAGE:-ghcr.io/alphabaijinde/openclaw-opencode:latest}
+    pull_policy: ${OPENCODE_PULL_POLICY:-always}
     build:
       context: ./docker/opencode
       dockerfile: Dockerfile

@@ -4,11 +4,11 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--non-interactive] [--auto-install] [--yes]
+  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--opencode-mode prebuilt|local] [--non-interactive] [--auto-install] [--yes]
 
 What it does:
   0) Checks local environment prerequisites
-  1) Prepares local opencode binary for Docker build context
+  1) Uses prebuilt opencode image (default) or prepares local opencode binary (local mode)
   2) Clones OpenClaw repo if target path does not exist
   3) Installs docker add-on files into OpenClaw repo
   4) Upserts required OpenClaw .env keys with safe defaults
@@ -31,6 +31,7 @@ OPENCLAW_REPO_URL="https://github.com/openclaw/openclaw.git"
 NON_INTERACTIVE=0
 AUTO_INSTALL=0
 ASSUME_YES=0
+OPENCODE_MODE="${OPENCODE_MODE:-prebuilt}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -46,6 +47,11 @@ while [[ $# -gt 0 ]]; do
     --bridge-context)
       [[ $# -ge 2 ]] || { echo "Missing value for --bridge-context" >&2; exit 1; }
       BRIDGE_CONTEXT="$2"
+      shift 2
+      ;;
+    --opencode-mode)
+      [[ $# -ge 2 ]] || { echo "Missing value for --opencode-mode" >&2; exit 1; }
+      OPENCODE_MODE="$2"
       shift 2
       ;;
     --non-interactive)
@@ -75,6 +81,11 @@ done
 
 if [[ -z "${OPENCLAW_DIR}" ]]; then
   usage
+  exit 1
+fi
+
+if [[ "${OPENCODE_MODE}" != "prebuilt" && "${OPENCODE_MODE}" != "local" ]]; then
+  echo "Invalid --opencode-mode: ${OPENCODE_MODE} (expected prebuilt|local)" >&2
   exit 1
 fi
 
@@ -134,6 +145,9 @@ if [[ -x "${SCRIPT_DIR}/check-environment.sh" ]]; then
   if [[ "${ASSUME_YES}" -eq 1 ]]; then
     check_args+=("--yes")
   fi
+  if [[ "${OPENCODE_MODE}" == "local" ]]; then
+    check_args+=("--require-opencode-binary")
+  fi
   "${SCRIPT_DIR}/check-environment.sh" "${check_args[@]}" || exit 1
 fi
 
@@ -146,10 +160,12 @@ if [[ ! -f "${OPENCLAW_DIR}/docker-compose.yml" ]]; then
   exit 1
 fi
 
-if [[ ! -x "${OPENCODE_BIN}" ]]; then
-  echo "opencode binary not found or not executable: ${OPENCODE_BIN}" >&2
-  echo "Tip: install opencode first, or pass --opencode-bin /absolute/path/to/opencode" >&2
-  exit 1
+if [[ "${OPENCODE_MODE}" == "local" ]]; then
+  if [[ ! -x "${OPENCODE_BIN}" ]]; then
+    echo "opencode binary not found or not executable: ${OPENCODE_BIN}" >&2
+    echo "Tip: install opencode first, or pass --opencode-bin /absolute/path/to/opencode" >&2
+    exit 1
+  fi
 fi
 
 ENV_FILE="${OPENCLAW_DIR}/.env"
@@ -161,7 +177,9 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   fi
 fi
 
-prepare_binary
+if [[ "${OPENCODE_MODE}" == "local" ]]; then
+  prepare_binary
+fi
 
 install -m 0644 "${ADDON_DIR}/docker-compose.override.yml" "${OPENCLAW_DIR}/docker-compose.override.yml"
 mkdir -p "${OPENCLAW_DIR}/docker/opencode"
@@ -170,6 +188,8 @@ cp -a "${ADDON_DIR}/docker/opencode/." "${OPENCLAW_DIR}/docker/opencode/"
 set_env_default "${ENV_FILE}" "OPENCODE_AUTH_USERNAME" "opencode"
 set_env_default "${ENV_FILE}" "OPENCODE_AUTH_PASSWORD" "$(random_hex)"
 set_env_default "${ENV_FILE}" "OPENCODE_INSTALL_DIR" "${HOME}/.opencode"
+set_env_default "${ENV_FILE}" "OPENCODE_IMAGE" "ghcr.io/alphabaijinde/openclaw-opencode:latest"
+set_env_default "${ENV_FILE}" "OPENCODE_PULL_POLICY" "always"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_API_KEY" "$(random_hex)"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PORT" "8787"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_CONTEXT" "${BRIDGE_CONTEXT}"
@@ -206,11 +226,20 @@ Install complete.
 
 OpenClaw repo: ${OPENCLAW_DIR}
 Bridge context: ${BRIDGE_CONTEXT}
+Opencode mode: ${OPENCODE_MODE}
 Opencode binary: ${OPENCODE_BIN}
 
 Next:
   cd ${OPENCLAW_DIR}
+EOF
+
+if [[ "${OPENCODE_MODE}" == "local" ]]; then
+  cat <<EOF
   docker compose build opencode
+EOF
+fi
+
+cat <<EOF
   docker compose up -d
   docker compose exec opencode opencode auth login
   ${ADDON_DIR}/scripts/select-opencode-model.sh ${OPENCLAW_DIR}

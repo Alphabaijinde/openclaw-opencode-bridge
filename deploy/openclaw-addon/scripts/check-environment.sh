@@ -4,17 +4,19 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  check-environment.sh [openclaw-dir] [--auto-install] [--yes]
+  check-environment.sh [openclaw-dir] [--auto-install] [--yes] [--require-opencode-binary]
 
 Options:
   --auto-install   Try to install missing git/docker/docker compose (best effort)
   --yes            Non-interactive mode for package installs
+  --require-opencode-binary  Fail when local opencode binary is missing
 USAGE
 }
 
 OPENCLAW_DIR=""
 AUTO_INSTALL=0
 ASSUME_YES=0
+REQUIRE_OPENCODE_BINARY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -28,6 +30,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --yes)
       ASSUME_YES=1
+      shift
+      ;;
+    --require-opencode-binary)
+      REQUIRE_OPENCODE_BINARY=1
       shift
       ;;
     *)
@@ -175,7 +181,11 @@ done
 if [[ -n "${found_opencode}" ]]; then
   ok "opencode binary found: ${found_opencode}"
 else
-  fail "opencode binary not found. Install opencode first, or prepare OPENCODE_BINARY_PATH."
+  if [[ "${REQUIRE_OPENCODE_BINARY}" -eq 1 ]]; then
+    fail "opencode binary not found. Install opencode first, or prepare OPENCODE_BINARY_PATH."
+  else
+    warn "opencode binary not found (OK for prebuilt image mode)."
+  fi
 fi
 
 if [[ -n "${OPENCLAW_DIR}" ]]; then
