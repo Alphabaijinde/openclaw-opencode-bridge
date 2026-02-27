@@ -15,5 +15,5 @@ Open-source default runtime stack:
 - English docs: `README.en.md`
 - 中文文档: `README.zh-CN.md`
 - Docker add-on: `deploy/openclaw-addon/README.md`
-- Release notes: `docs/RELEASE_NOTES_v0.1.3.md`
+- Release notes: `docs/RELEASE_NOTES_v0.1.4.md`
 - GHCR image: `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`

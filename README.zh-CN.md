@@ -53,4 +53,4 @@ OPENCODE_BRIDGE_PORT=8787
 - Docker add-on：`deploy/openclaw-addon/README.md`
 - 架构说明：`docs/ARCHITECTURE.md`
 - 故障排查：`docs/TROUBLESHOOTING.md`
-- 发布说明：`docs/RELEASE_NOTES_v0.1.3.md`
+- 发布说明：`docs/RELEASE_NOTES_v0.1.4.md`
