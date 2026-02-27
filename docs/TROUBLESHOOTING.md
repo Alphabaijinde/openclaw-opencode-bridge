@@ -15,6 +15,30 @@ docker compose logs --tail=100 opencode-bridge
 docker compose logs --tail=100 opencode
 ```
 
+## Dashboard shows `pairing required`
+
+Symptoms:
+- OpenClaw page opens, but chat input is disabled and banner shows `pairing required`.
+
+Fix:
+
+```bash
+docker compose run --rm openclaw-cli devices list
+docker compose run --rm openclaw-cli devices approve --latest
+docker compose restart openclaw-gateway
+```
+
+If there are multiple pending devices, approve by id instead of `--latest`.
+
+## Dashboard shows token/auth error
+
+Symptoms:
+- message like `gateway token missing` / `unauthorized`.
+
+Fix:
+- open dashboard URL that includes `#token=...` once (from gateway startup logs).
+- then revisit plain URL `http://127.0.0.1:18789/`.
+
 ## 401 Unauthorized (from bridge)
 
 Symptoms:
@@ -106,6 +130,7 @@ Checks:
 Notes:
 - Container proxy env (`HOST_HTTP_PROXY` / `HOST_HTTPS_PROXY`) is separate from Docker daemon proxy.
 - Do not hard-code old local proxy ports unless the process is actually listening there.
+- Add-on defaults to `OPENCODE_PULL_POLICY=missing` and `OPENCODE_BRIDGE_PULL_POLICY=missing` to avoid repeated pulls.
 
 ## Feishu plugin not taking effect
 

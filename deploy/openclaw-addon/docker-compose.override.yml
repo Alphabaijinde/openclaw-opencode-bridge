@@ -58,6 +58,9 @@ services:
       # Official opencode docs: Basic auth enabled by default, username defaults to "opencode"
       OPENCODE_AUTH_PASSWORD: ${OPENCODE_AUTH_PASSWORD:?set_in_.env}
       OPENCODE_AUTH_USERNAME: ${OPENCODE_AUTH_USERNAME:-opencode}
+      # Compatibility aliases for newer opencode server env names
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_AUTH_PASSWORD:?set_in_.env}
+      OPENCODE_SERVER_USERNAME: ${OPENCODE_AUTH_USERNAME:-opencode}
       # Optional provider/model defaults for your opencode instance
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -118,6 +121,6 @@ services:
     depends_on:
       - opencode
     ports:
-      - "${OPENCODE_BRIDGE_PORT:-8787}:8787"
+      - "${OPENCLAW_PORT_BIND_HOST:-127.0.0.1}:${OPENCODE_BRIDGE_PORT:-8787}:8787"
     networks:
       - default

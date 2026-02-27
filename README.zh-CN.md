@@ -4,6 +4,12 @@
 
 本项目提供一个 OpenAI 兼容桥接层，把 OpenClaw 的请求转发到本地 `opencode serve`，用于接入 opencode 的免费 AI 路径。
 
+开源最小可用组合是三件套：
+
+- OpenClaw（官方镜像）
+- opencode（预构建镜像）
+- opencode-bridge（预构建镜像）
+
 ## 核心能力
 
 - `GET /v1/models`
@@ -26,6 +32,13 @@ docker compose exec opencode opencode auth login
 docker compose restart opencode-bridge
 ```
 
+默认桥接端口仅绑定本机：
+
+```bash
+OPENCLAW_PORT_BIND_HOST=127.0.0.1
+OPENCODE_BRIDGE_PORT=8787
+```
+
 ## 产物说明
 
 - `openclaw-gateway`：使用 OpenClaw 官方镜像
@@ -40,4 +53,4 @@ docker compose restart opencode-bridge
 - Docker add-on：`deploy/openclaw-addon/README.md`
 - 架构说明：`docs/ARCHITECTURE.md`
 - 故障排查：`docs/TROUBLESHOOTING.md`
-- 发布说明：`docs/RELEASE_NOTES_v0.1.2.md`
+- 发布说明：`docs/RELEASE_NOTES_v0.1.3.md`

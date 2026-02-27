@@ -1,10 +1,10 @@
-# OpenClaw + Opencode + Feishu (Docker Add-on)
+# OpenClaw + Opencode Bridge (Docker Add-on)
 
 This add-on extends the official OpenClaw Docker deployment with:
 
 - `opencode` server container
 - `opencode-bridge` (OpenAI-compatible API for OpenClaw custom provider)
-- Feishu plugin env wiring on the OpenClaw `openclaw-gateway` container
+- optional Feishu plugin env wiring on the OpenClaw `openclaw-gateway` container
 
 ## What this add-on assumes
 
@@ -46,11 +46,24 @@ docker compose pull
 docker compose up -d
 ```
 
+OpenClaw Dashboard default URL:
+
+```text
+http://127.0.0.1:18789/
+```
+
 By default, both `opencode` and `opencode-bridge` use prebuilt images:
 
 ```bash
 OPENCODE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode:latest
 OPENCODE_BRIDGE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest
+```
+
+Default host binding for bridge is localhost only:
+
+```bash
+OPENCLAW_PORT_BIND_HOST=127.0.0.1
+OPENCODE_BRIDGE_PORT=8787
 ```
 
 If you want local source/binary build instead:
@@ -65,6 +78,12 @@ docker compose build opencode-bridge
 - `openclaw-gateway` / `openclaw-cli`: OpenClaw official image (`OPENCLAW_IMAGE`, default `ghcr.io/openclaw/openclaw:latest`).
 - `opencode`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode:latest`), local build optional.
 - `opencode-bridge`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`), local build optional.
+
+This means a standard startup includes all three runtime components:
+
+- OpenClaw (official image)
+- opencode server
+- opencode-bridge
 
 ## 2) Manual path (advanced)
 
@@ -157,7 +176,30 @@ Important:
 - This config affects container runtime/build env.
 - Docker daemon pull proxy is a separate setting. Do not hard-code old local ports like `58591` unless that proxy endpoint is really alive on your machine.
 
-## 4) Enable Feishu plugin in OpenClaw
+## 4) Pair dashboard device once (if chat page shows `pairing required`)
+
+```bash
+docker compose run --rm openclaw-cli devices list
+docker compose run --rm openclaw-cli devices approve --latest
+docker compose restart openclaw-gateway
+```
+
+If chat page shows token error, open the full dashboard URL from gateway logs and use that tokenized URL once.
+
+## 5) Configure OpenClaw Custom Provider (UI)
+
+Add a Custom Provider in the OpenClaw UI:
+
+- `Base URL`: `http://opencode-bridge:8787/v1` (inside container network) or `http://host.docker.internal:8787/v1` (from host/browser context depending on UI behavior)
+- `API Key`: value of `OPENCODE_BRIDGE_API_KEY`
+- Model ID: `opencode-local` (or your `OPENCODE_OPENAI_MODEL_ID`)
+
+Practical note:
+
+- OpenClaw backend (`openclaw-gateway`) can reach `opencode-bridge` by service name.
+- If the provider call is made from browser directly in your setup, use the host-mapped port (`http://localhost:8787/v1`).
+
+## 6) Enable Feishu plugin in OpenClaw (optional)
 
 Most OpenClaw images already include `@openclaw/feishu` as a stock plugin. Enable it:
 
@@ -173,20 +215,7 @@ docker compose run --rm openclaw-cli plugins install @openclaw/feishu
 docker compose restart openclaw-gateway
 ```
 
-## 5) Configure OpenClaw Custom Provider (UI)
-
-Add a Custom Provider in the OpenClaw UI:
-
-- `Base URL`: `http://opencode-bridge:8787/v1` (inside container network) or `http://host.docker.internal:8787/v1` (from host/browser context depending on UI behavior)
-- `API Key`: value of `OPENCODE_BRIDGE_API_KEY`
-- Model ID: `opencode-local` (or your `OPENCODE_OPENAI_MODEL_ID`)
-
-Practical note:
-
-- OpenClaw backend (`openclaw-gateway`) can reach `opencode-bridge` by service name.
-- If the provider call is made from browser directly in your setup, use the host-mapped port (`http://localhost:8787/v1`).
-
-## 6) Configure Feishu app (WebSocket mode)
+## 7) Configure Feishu app (WebSocket mode)
 
 In Feishu developer console:
 
