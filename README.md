@@ -7,7 +7,7 @@ OpenAI-compatible bridge for OpenClaw to use local opencode (including free-AI p
 
 Open-source default runtime stack:
 - OpenClaw (official image)
-- opencode (`ghcr.io/alphabaijinde/openclaw-opencode:latest`)
+- opencode (Docker container built during compose, no host install required)
 - opencode-bridge (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`)
 
 ## Quick Links
@@ -16,4 +16,4 @@ Open-source default runtime stack:
 - 中文文档: `README.zh-CN.md`
 - Docker add-on: `deploy/openclaw-addon/README.md`
 - Release notes: `docs/RELEASE_NOTES_v0.1.4.md`
-- GHCR image: `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`
+- GHCR image (bridge only): `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`

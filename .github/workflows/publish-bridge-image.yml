@@ -1,4 +1,4 @@
-name: Publish Images
+name: Publish Bridge Image
 
 on:
   push:
@@ -15,21 +15,6 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - id: bridge
-            image: ghcr.io/alphabaijinde/openclaw-opencode-bridge
-            context: .
-            dockerfile: Dockerfile
-            build_args: ""
-          - id: opencode
-            image: ghcr.io/alphabaijinde/openclaw-opencode
-            context: .
-            dockerfile: deploy/openclaw-addon/docker/opencode-prebuilt/Dockerfile
-            build_args: |
-              OPENCODE_NPM_VERSION=1.1.51
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +36,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ matrix.image }}
+          images: ghcr.io/alphabaijinde/openclaw-opencode-bridge
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -61,10 +46,9 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          context: .
+          file: Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: ${{ matrix.build_args }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

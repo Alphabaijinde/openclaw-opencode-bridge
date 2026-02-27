@@ -10,7 +10,7 @@ This add-on extends the official OpenClaw Docker deployment with:
 
 - You deploy OpenClaw using the **official** `docker-compose.yml` from the OpenClaw repo.
 - Docker is available on the host.
-- `opencode` local installation is optional (only needed for local-opencode build mode).
+- No host `opencode` install is required in the default path.
 
 ## 1) Quick path (recommended)
 
@@ -42,8 +42,8 @@ Then start the stack:
 
 ```bash
 cd /path/to/openclaw
-docker compose pull
-docker compose up -d
+docker compose pull openclaw-gateway opencode-bridge
+docker compose up -d --build
 ```
 
 OpenClaw Dashboard default URL:
@@ -52,10 +52,12 @@ OpenClaw Dashboard default URL:
 http://127.0.0.1:18789/
 ```
 
-By default, both `opencode` and `opencode-bridge` use prebuilt images:
+By default, `opencode` is built during compose and `opencode-bridge` uses the prebuilt image:
 
 ```bash
-OPENCODE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode:latest
+OPENCODE_IMAGE=openclaw-opencode-local:latest
+OPENCODE_PULL_POLICY=never
+OPENCODE_BUILD_CONTEXT=./docker/opencode-prebuilt
 OPENCODE_BRIDGE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest
 ```
 
@@ -66,17 +68,17 @@ OPENCLAW_PORT_BIND_HOST=127.0.0.1
 OPENCODE_BRIDGE_PORT=8787
 ```
 
-If you want local source/binary build instead:
+If you want to rebuild manually:
 
 ```bash
-OPENCODE_PULL_POLICY=never docker compose build opencode
+docker compose build opencode
 docker compose build opencode-bridge
 ```
 
 ## 1.1) Container image sources (important)
 
 - `openclaw-gateway` / `openclaw-cli`: OpenClaw official image (`OPENCLAW_IMAGE`, default `ghcr.io/openclaw/openclaw:latest`).
-- `opencode`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode:latest`), local build optional.
+- `opencode`: built locally by default into `openclaw-opencode-local:latest` from the bundled Dockerfile; users do not need a host `opencode` install.
 - `opencode-bridge`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`), local build optional.
 
 This means a standard startup includes all three runtime components:
@@ -102,17 +104,18 @@ cp .env.example .env
  - `docker-compose.override.yml`
  - `docker/opencode/`
 
-3) Prepare `opencode` binary:
+3) For the default Docker-native path, no host `opencode` install is needed. If you explicitly want host-binary mode instead:
 
 ```bash
 cd /path/to/openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/prepare-opencode-binary.sh
 ```
 
-4) Set local mode in OpenClaw `.env`:
+4) In OpenClaw `.env`, set the build mode you want:
 
 ```bash
 OPENCODE_PULL_POLICY=never
+OPENCODE_BUILD_CONTEXT=./docker/opencode-prebuilt
 ```
 
 5) Append values from `.env.additions.example` into OpenClaw `.env`.

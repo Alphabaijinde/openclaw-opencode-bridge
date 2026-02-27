@@ -4,14 +4,15 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--opencode-mode prebuilt|local] [--non-interactive] [--auto-install] [--yes]
+  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--opencode-mode docker|local] [--non-interactive] [--auto-install] [--yes]
 
 What it does:
   0) Checks local environment prerequisites
-  1) Uses prebuilt opencode image (default) or prepares local opencode binary (local mode)
-  2) Clones OpenClaw repo if target path does not exist
-  3) Installs docker add-on files into OpenClaw repo
-  4) Upserts required OpenClaw .env keys with safe defaults
+  1) Prepares a Docker-native opencode build by default (no host opencode install required)
+  2) Optionally supports local opencode binary mode when explicitly requested
+  3) Clones OpenClaw repo if target path does not exist
+  4) Installs docker add-on files into OpenClaw repo
+  5) Upserts required OpenClaw .env keys with safe defaults
 EOF
 }
 
@@ -31,7 +32,7 @@ OPENCLAW_REPO_URL="https://github.com/openclaw/openclaw.git"
 NON_INTERACTIVE=0
 AUTO_INSTALL=0
 ASSUME_YES=0
-OPENCODE_MODE="${OPENCODE_MODE:-prebuilt}"
+OPENCODE_MODE="${OPENCODE_MODE:-docker}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -84,8 +85,12 @@ if [[ -z "${OPENCLAW_DIR}" ]]; then
   exit 1
 fi
 
-if [[ "${OPENCODE_MODE}" != "prebuilt" && "${OPENCODE_MODE}" != "local" ]]; then
-  echo "Invalid --opencode-mode: ${OPENCODE_MODE} (expected prebuilt|local)" >&2
+if [[ "${OPENCODE_MODE}" == "prebuilt" ]]; then
+  OPENCODE_MODE="docker"
+fi
+
+if [[ "${OPENCODE_MODE}" != "docker" && "${OPENCODE_MODE}" != "local" ]]; then
+  echo "Invalid --opencode-mode: ${OPENCODE_MODE} (expected docker|local)" >&2
   exit 1
 fi
 
@@ -177,19 +182,24 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   fi
 fi
 
+install -m 0644 "${ADDON_DIR}/docker-compose.override.yml" "${OPENCLAW_DIR}/docker-compose.override.yml"
+mkdir -p "${OPENCLAW_DIR}/docker/opencode"
+cp -a "${ADDON_DIR}/docker/opencode/." "${OPENCLAW_DIR}/docker/opencode/"
+mkdir -p "${OPENCLAW_DIR}/docker/opencode-prebuilt"
+cp -a "${ADDON_DIR}/docker/opencode-prebuilt/." "${OPENCLAW_DIR}/docker/opencode-prebuilt/"
+
 if [[ "${OPENCODE_MODE}" == "local" ]]; then
   prepare_binary
 fi
 
-install -m 0644 "${ADDON_DIR}/docker-compose.override.yml" "${OPENCLAW_DIR}/docker-compose.override.yml"
-mkdir -p "${OPENCLAW_DIR}/docker/opencode"
-cp -a "${ADDON_DIR}/docker/opencode/." "${OPENCLAW_DIR}/docker/opencode/"
-
 set_env_default "${ENV_FILE}" "OPENCODE_AUTH_USERNAME" "opencode"
 set_env_default "${ENV_FILE}" "OPENCODE_AUTH_PASSWORD" "$(random_hex)"
 set_env_default "${ENV_FILE}" "OPENCODE_INSTALL_DIR" "${HOME}/.opencode"
-set_env_default "${ENV_FILE}" "OPENCODE_IMAGE" "ghcr.io/alphabaijinde/openclaw-opencode:latest"
-set_env_default "${ENV_FILE}" "OPENCODE_PULL_POLICY" "missing"
+set_env_default "${ENV_FILE}" "OPENCODE_IMAGE" "openclaw-opencode-local:latest"
+set_env_default "${ENV_FILE}" "OPENCODE_PULL_POLICY" "never"
+set_env_default "${ENV_FILE}" "OPENCODE_BUILD_CONTEXT" "./docker/opencode-prebuilt"
+set_env_default "${ENV_FILE}" "OPENCODE_BUILD_DOCKERFILE" "Dockerfile"
+set_env_default "${ENV_FILE}" "OPENCODE_NPM_VERSION" "1.1.51"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_API_KEY" "$(random_hex)"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PORT" "8787"
 set_env_default "${ENV_FILE}" "OPENCLAW_PORT_BIND_HOST" "127.0.0.1"
@@ -207,6 +217,14 @@ set_env_default "${ENV_FILE}" "FEISHU_APP_ID" ""
 set_env_default "${ENV_FILE}" "FEISHU_APP_SECRET" ""
 set_env_default "${ENV_FILE}" "FEISHU_VERIFICATION_TOKEN" ""
 set_env_default "${ENV_FILE}" "FEISHU_ENCRYPT_KEY" ""
+
+if [[ "${OPENCODE_MODE}" == "local" ]]; then
+  upsert_env "${ENV_FILE}" "OPENCODE_BUILD_CONTEXT" "./docker/opencode"
+  upsert_env "${ENV_FILE}" "OPENCODE_BUILD_DOCKERFILE" "Dockerfile"
+else
+  upsert_env "${ENV_FILE}" "OPENCODE_BUILD_CONTEXT" "./docker/opencode-prebuilt"
+  upsert_env "${ENV_FILE}" "OPENCODE_BUILD_DOCKERFILE" "Dockerfile"
+fi
 
 if [[ "${NON_INTERACTIVE}" -eq 0 && -t 0 ]]; then
   current_provider="$(grep -E '^OPENCODE_PROVIDER_ID=' "${ENV_FILE}" | tail -n1 | cut -d= -f2- || true)"
@@ -234,14 +252,9 @@ Next:
   cd ${OPENCLAW_DIR}
 EOF
 
-if [[ "${OPENCODE_MODE}" == "local" ]]; then
-  cat <<EOF
-  docker compose build opencode
-EOF
-fi
-
 cat <<EOF
-  docker compose up -d
+  docker compose pull openclaw-gateway opencode-bridge
+  docker compose up -d --build
   docker compose exec opencode opencode auth login
   ${ADDON_DIR}/scripts/select-opencode-model.sh ${OPENCLAW_DIR}
 EOF

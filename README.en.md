@@ -3,18 +3,19 @@
 [English](README.en.md) | [中文](README.zh-CN.md)
 
 This bridge exposes an OpenAI-compatible API for OpenClaw and forwards requests to a local `opencode serve` instance.
+This repo publishes only the `opencode-bridge` image to GHCR. The `opencode` service still runs in Docker, but the add-on builds it during compose from the bundled Dockerfile, so users only need Docker.
 
 For open-source deployment, the minimum runnable stack is:
 
 - OpenClaw (official image)
-- opencode (prebuilt image)
+- opencode (Docker container built during compose)
 - opencode-bridge (prebuilt image)
 
 ## Open Source Guide
 
 - Quick Docker install: `deploy/openclaw-addon/scripts/install-openclaw-addon.sh`
 - Environment check: `deploy/openclaw-addon/scripts/check-environment.sh`
-- GHCR image: `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`
+- GHCR image (bridge only): `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`
 - Release notes v0.1.4: `docs/RELEASE_NOTES_v0.1.4.md`
 - Chinese playbook: `docs/OPEN_SOURCE_PLAYBOOK.zh-CN.md`
 - Release checklist (zh-CN): `docs/RELEASE_CHECKLIST.zh-CN.md`
@@ -41,8 +42,8 @@ cd openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/check-environment.sh
 ./scripts/install-openclaw-addon.sh /path/to/openclaw
 cd /path/to/openclaw
-docker compose pull
-docker compose up -d
+docker compose pull openclaw-gateway opencode-bridge
+docker compose up -d --build
 docker compose exec opencode opencode auth login
 ../openclaw-opencode-bridge/deploy/openclaw-addon/scripts/select-opencode-model.sh /path/to/openclaw
 docker compose restart opencode-bridge
