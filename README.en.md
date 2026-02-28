@@ -10,7 +10,7 @@ This repo publishes a single GHCR package with two tags:
 
 ## One-click all-in-one (recommended)
 
-Users only need Docker. The installer can install Docker (best effort), pull the all-in-one image, apply proxy env, and start the container:
+Users only need Docker. The installer can install Docker (best effort), pull the all-in-one image, apply proxy env, and start the container. After startup it prints and tries to open a direct dashboard URL that already includes the token:
 
 ```bash
 git clone https://github.com/Alphabaijinde/openclaw-opencode-bridge.git
@@ -24,10 +24,76 @@ The all-in-one runtime includes:
 - opencode
 - opencode-bridge
 
-First-time free-AI auth still requires:
+The current defaults prefer the free-model path, so many setups can chat immediately without logging in first.
+
+Only run this if you want your own account/provider, or the free path is blocked in your environment:
 
 ```bash
 docker exec -it openclaw-opencode-all-in-one opencode auth login
+```
+
+For the full zero-to-chat walkthrough, see:
+
+- `docs/ALL_IN_ONE_QUICKSTART.en.md`
+- `docs/IMPLEMENTATION_SUMMARY.en.md`
+
+## Read-only host agent (browser / desktop / system)
+
+If you want containerized OpenClaw to inspect the current host browser, frontmost desktop state, and system details, do not grant the container direct macOS GUI control. Run a small read-only agent on the host instead:
+
+```bash
+cd openclaw-opencode-bridge
+./scripts/start-host-automation-agent.sh
+```
+
+Default read-only endpoints:
+
+- `GET /health`
+- `GET /v1/system/info`
+- `GET /v1/system/apps`
+- `GET /v1/desktop/frontmost`
+- `GET /v1/browser/frontmost`
+- `GET /v1/browser/tabs?app=Google%20Chrome`
+
+Optional screenshots are still read-only, but disabled by default:
+
+```bash
+HOST_AUTOMATION_ALLOW_SCREENSHOT=1 ./scripts/start-host-automation-agent.sh
+```
+
+From inside the container, use:
+
+```text
+http://host.docker.internal:4567
+```
+
+If the launcher generated a token, append it to the URL:
+
+```text
+http://host.docker.internal:4567/v1/system/info?token=<shared-token>
+```
+
+This keeps the first phase read-only. We can layer in write actions later behind separate authorization.
+
+If you want OpenClaw to safely control the host browser, upgrade only the browser layer to `browser-write`:
+
+```bash
+HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
+```
+
+This enables browser write actions only. It does not enable desktop-write or system-write. Current browser write endpoints:
+
+- `POST /v1/browser/activate`
+- `POST /v1/browser/open-url`
+- `POST /v1/browser/reload`
+- `POST /v1/browser/select-tab`
+
+Example:
+
+```bash
+curl -X POST "http://127.0.0.1:4567/v1/browser/open-url?token=<shared-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"app":"Google Chrome","url":"https://www.baidu.com","newTab":true}'
 ```
 
 ## Three-container add-on (advanced)

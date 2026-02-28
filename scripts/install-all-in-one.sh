@@ -11,7 +11,9 @@ OPENCODE_BRIDGE_PORT="${OPENCODE_BRIDGE_PORT:-8787}"
 HOST_HTTP_PROXY="${HOST_HTTP_PROXY:-${HTTP_PROXY:-}}"
 HOST_HTTPS_PROXY="${HOST_HTTPS_PROXY:-${HTTPS_PROXY:-}}"
 HOST_NO_PROXY="${HOST_NO_PROXY:-localhost,127.0.0.1,host.docker.internal}"
-SKIP_OPENCODE_LOGIN=0
+HOST_AUTOMATION_BASE_URL="${HOST_AUTOMATION_BASE_URL:-http://host.docker.internal:4567}"
+AUTO_OPEN_DASHBOARD="${AUTO_OPEN_DASHBOARD:-1}"
+RUN_OPENCODE_LOGIN=0
 DOCKER_BIN=""
 
 normalize_docker_host() {
@@ -49,7 +51,11 @@ resolve_docker_bin() {
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/install-all-in-one.sh [--skip-opencode-login]
+  scripts/install-all-in-one.sh [--opencode-login] [--skip-opencode-login]
+
+Flags:
+  --opencode-login       Start interactive opencode login after install
+  --skip-opencode-login  Compatibility flag; install already skips login by default
 
 Environment overrides:
   IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest
@@ -58,13 +64,18 @@ Environment overrides:
   HOST_HTTP_PROXY=http://host:port
   HOST_HTTPS_PROXY=http://host:port
   HOST_NO_PROXY=localhost,127.0.0.1,host.docker.internal
+  HOST_AUTOMATION_BASE_URL=http://host.docker.internal:4567
+  AUTO_OPEN_DASHBOARD=1
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --opencode-login)
+      RUN_OPENCODE_LOGIN=1
+      shift
+      ;;
     --skip-opencode-login)
-      SKIP_OPENCODE_LOGIN=1
       shift
       ;;
     -h|--help)
@@ -170,6 +181,22 @@ wait_for_http() {
   return 1
 }
 
+open_url() {
+  local target="$1"
+  case "$(uname -s)" in
+    Darwin)
+      if command -v open >/dev/null 2>&1; then
+        open "${target}" >/dev/null 2>&1 || true
+      fi
+      ;;
+    Linux)
+      if command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "${target}" >/dev/null 2>&1 || true
+      fi
+      ;;
+  esac
+}
+
 ensure_docker
 wait_for_docker
 
@@ -199,6 +226,9 @@ fi
 if [[ -n "${HOST_NO_PROXY}" ]]; then
   docker_args+=(-e "HOST_NO_PROXY=${HOST_NO_PROXY}")
 fi
+if [[ -n "${HOST_AUTOMATION_BASE_URL}" ]]; then
+  docker_args+=(-e "HOST_AUTOMATION_BASE_URL=${HOST_AUTOMATION_BASE_URL}")
+fi
 
 "${DOCKER_BIN}" "${docker_args[@]}" "${IMAGE}"
 
@@ -216,6 +246,10 @@ fi
 echo
 echo "Installed successfully."
 echo "Dashboard: http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}"
+if [[ -n "${RUNTIME_OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
+  DASHBOARD_DIRECT_URL="http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}/#token=${RUNTIME_OPENCLAW_GATEWAY_TOKEN}"
+  echo "Dashboard (direct): ${DASHBOARD_DIRECT_URL}"
+fi
 echo "Bridge: http://127.0.0.1:${OPENCODE_BRIDGE_PORT}/v1"
 echo "Data dir: ${DATA_DIR}"
 if [[ -n "${RUNTIME_OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
@@ -224,9 +258,20 @@ fi
 if [[ -n "${RUNTIME_BRIDGE_API_KEY:-}" ]]; then
   echo "Bridge API key: ${RUNTIME_BRIDGE_API_KEY}"
 fi
+echo "Host automation base URL (optional): ${HOST_AUTOMATION_BASE_URL}"
+echo "Start host read-only agent: ./scripts/start-host-automation-agent.sh"
 
-if [[ "${SKIP_OPENCODE_LOGIN}" -eq 0 && -t 0 && -t 1 ]]; then
+if [[ -n "${DASHBOARD_DIRECT_URL:-}" && "${AUTO_OPEN_DASHBOARD}" != "0" && -t 1 ]]; then
+  echo "Opening dashboard in your default browser..."
+  open_url "${DASHBOARD_DIRECT_URL}"
+fi
+
+if [[ "${RUN_OPENCODE_LOGIN}" -eq 1 && -t 0 && -t 1 ]]; then
   echo
   echo "Starting opencode login flow..."
   "${DOCKER_BIN}" exec -it "${CONTAINER_NAME}" opencode auth login || true
+else
+  echo
+  echo "Optional: run this if you want to log in to your own opencode account/providers:"
+  echo "  ${DOCKER_BIN} exec -it ${CONTAINER_NAME} opencode auth login"
 fi

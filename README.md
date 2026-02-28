@@ -15,5 +15,10 @@ Default package layout:
 - 中文文档: `README.zh-CN.md`
 - Docker add-on: `deploy/openclaw-addon/README.md`
 - One-click installer: `scripts/install-all-in-one.sh`
+- Host read-only agent: `scripts/start-host-automation-agent.sh`
+- All-in-one quickstart (en): `docs/ALL_IN_ONE_QUICKSTART.en.md`
+- All-in-one quickstart (zh-CN): `docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
+- Implementation summary (en): `docs/IMPLEMENTATION_SUMMARY.en.md`
+- Implementation summary (zh-CN): `docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
 - Release notes: `docs/RELEASE_NOTES_v0.1.4.md`
 - GHCR image package: `ghcr.io/alphabaijinde/openclaw-opencode-bridge`

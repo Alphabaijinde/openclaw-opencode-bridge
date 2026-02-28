@@ -10,7 +10,7 @@
 
 ## 一键安装（推荐）
 
-用户本地只需要 Docker。安装脚本会尽力自动安装 Docker、启动 Docker Desktop、拉取镜像、注入代理环境并启动容器：
+用户本地只需要 Docker。安装脚本会尽力自动安装 Docker、启动 Docker Desktop、拉取镜像、注入代理环境并启动容器。安装完成后会输出并尝试自动打开一个已经带 token 的 Dashboard 直达 URL：
 
 ```bash
 git clone https://github.com/Alphabaijinde/openclaw-opencode-bridge.git
@@ -24,10 +24,76 @@ cd openclaw-opencode-bridge
 - opencode
 - opencode-bridge
 
-首次使用免费 AI 路径时，仍需完成一次登录：
+默认配置会优先走当前的免费模型路径，很多情况下可以直接聊天，不需要先登录。
+
+如果你想使用自己的账号 / provider，或者当前网络环境下免费路径不可用，再执行：
 
 ```bash
 docker exec -it openclaw-opencode-all-in-one opencode auth login
+```
+
+更完整的傻瓜式安装说明见：
+
+- `docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
+- `docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
+
+## 宿主机只读代理（浏览器 / 桌面 / 系统）
+
+如果你希望容器里的 OpenClaw 读取当前宿主机的浏览器、桌面前台状态和系统信息，不要让容器直接碰 macOS GUI，而是在宿主机启动一个只读代理：
+
+```bash
+cd openclaw-opencode-bridge
+./scripts/start-host-automation-agent.sh
+```
+
+默认能力（只读）：
+
+- `GET /health`
+- `GET /v1/system/info`
+- `GET /v1/system/apps`
+- `GET /v1/desktop/frontmost`
+- `GET /v1/browser/frontmost`
+- `GET /v1/browser/tabs?app=Google%20Chrome`
+
+可选截图能力（仍然是只读）默认关闭；需要时再启用：
+
+```bash
+HOST_AUTOMATION_ALLOW_SCREENSHOT=1 ./scripts/start-host-automation-agent.sh
+```
+
+容器内访问宿主机代理时使用：
+
+```text
+http://host.docker.internal:4567
+```
+
+如果启动脚本生成了 token，就把它附在 URL 后面：
+
+```text
+http://host.docker.internal:4567/v1/system/info?token=<shared-token>
+```
+
+这一步只开放读权限，不开放点击、输入、打开应用之类的写操作。后续如果你要，我可以再把它升级成分级授权的读写代理。
+
+如果你要让 OpenClaw 安全地控制宿主机浏览器，可以单独升级到 `browser-write`：
+
+```bash
+HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
+```
+
+这个模式只开放浏览器写操作，不开放桌面写操作和系统写操作。当前支持：
+
+- `POST /v1/browser/activate`
+- `POST /v1/browser/open-url`
+- `POST /v1/browser/reload`
+- `POST /v1/browser/select-tab`
+
+示例：
+
+```bash
+curl -X POST "http://127.0.0.1:4567/v1/browser/open-url?token=<shared-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"app":"Google Chrome","url":"https://www.baidu.com","newTab":true}'
 ```
 
 ## 三容器模式（高级）
@@ -69,6 +135,8 @@ OPENCODE_BRIDGE_PORT=8787
 
 ## 文档入口
 
+- 一键安装快速上手：`docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
+- 实现说明：`docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
 - 安装脚本：`deploy/openclaw-addon/scripts/install-openclaw-addon.sh`
 - 环境检测：`deploy/openclaw-addon/scripts/check-environment.sh`
 - 模型选择：`deploy/openclaw-addon/scripts/select-opencode-model.sh`

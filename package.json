@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "node --watch server.mjs"
+    "dev": "node --watch server.mjs",
+    "host-agent": "node scripts/host-automation-agent.mjs",
+    "host-agent:readonly": "HOST_AUTOMATION_MODE=read-only node scripts/host-automation-agent.mjs",
+    "host-agent:browser-write": "HOST_AUTOMATION_MODE=browser-write node scripts/host-automation-agent.mjs"
   }
 }
