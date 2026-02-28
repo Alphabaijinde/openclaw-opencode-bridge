@@ -26,6 +26,8 @@ The all-in-one runtime includes:
 
 The current defaults prefer the free-model path, so many setups can chat immediately without logging in first.
 
+The all-in-one runtime also auto-approves the first pending device by default, which avoids the first-run pairing prompt in most cases.
+
 Only run this if you want your own account/provider, or the free path is blocked in your environment:
 
 ```bash

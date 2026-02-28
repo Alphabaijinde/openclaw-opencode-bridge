@@ -33,6 +33,7 @@ cd openclaw-opencode-bridge
 8. 读取运行时 token 和 API key
 9. 输出一个带 token 的直达 Dashboard URL
 10. 在交互式终端中自动打开默认浏览器
+11. 默认自动批准首个待配对设备，减少首次打开时的配对阻塞
 
 ## 安装完成后会看到什么
 
@@ -72,6 +73,7 @@ http://127.0.0.1:18789/#token=<gateway-token>
 - `opencode-bridge` provider
 - 默认模型：`opencode-bridge/opencode-local`
 - `opencode-local` 到 `opencode` 默认免费模型路径的映射
+- 首个待配对设备自动批准（默认开启）
 
 ## 什么时候需要再执行 `opencode auth login`
 

@@ -22,6 +22,7 @@ HTTP_PROXY_VALUE="${HOST_HTTP_PROXY:-${HTTP_PROXY:-}}"
 HTTPS_PROXY_VALUE="${HOST_HTTPS_PROXY:-${HTTPS_PROXY:-}}"
 NO_PROXY_VALUE="${HOST_NO_PROXY:-localhost,127.0.0.1,opencode-bridge,host.docker.internal}"
 HOST_AUTOMATION_BASE_URL="${HOST_AUTOMATION_BASE_URL:-http://host.docker.internal:4567}"
+OPENCLAW_AUTO_APPROVE_FIRST_DEVICE="${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE:-1}"
 
 mkdir -p "${STACK_DIR}" "${OPENCLAW_DATA_DIR}" "${OPENCLAW_WORKSPACE_DIR}" "${OPENCODE_CONFIG_HOME}" "${OPENCODE_SHARE_HOME}" "${WORKSPACE_DIR}"
 mkdir -p "${HOME}/.config" "${HOME}/.local/share"
@@ -145,10 +146,69 @@ wait_for_port() {
   return 1
 }
 
+json_count() {
+  local file_path="$1"
+  if [[ ! -f "${file_path}" ]]; then
+    echo 0
+    return 0
+  fi
+  node - "${file_path}" <<'EOF'
+const fs = require("node:fs");
+const filePath = process.argv[2];
+try {
+  const raw = fs.readFileSync(filePath, "utf8").trim();
+  if (!raw) {
+    process.stdout.write("0");
+    process.exit(0);
+  }
+  const data = JSON.parse(raw);
+  if (Array.isArray(data)) {
+    process.stdout.write(String(data.length));
+    process.exit(0);
+  }
+  if (data && typeof data === "object") {
+    process.stdout.write(String(Object.keys(data).length));
+    process.exit(0);
+  }
+} catch {}
+process.stdout.write("0");
+EOF
+}
+
+auto_approve_first_device() {
+  if [[ ! "${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE}" =~ ^(1|true|yes)$ ]]; then
+    return 0
+  fi
+
+  local paired_file="${OPENCLAW_DATA_DIR}/devices/paired.json"
+  local pending_file="${OPENCLAW_DATA_DIR}/devices/pending.json"
+  local tries=120
+  local i
+  local paired_count
+  local pending_count
+
+  for ((i = 0; i < tries; i += 1)); do
+    paired_count="$(json_count "${paired_file}")"
+    if [[ "${paired_count}" -gt 0 ]]; then
+      return 0
+    fi
+
+    pending_count="$(json_count "${pending_file}")"
+    if [[ "${pending_count}" -gt 0 ]]; then
+      if node /app/openclaw.mjs devices approve --latest >/dev/null 2>&1; then
+        echo "auto-approved first pending device" >&2
+        return 0
+      fi
+    fi
+
+    sleep 1
+  done
+}
+
 cleanup() {
   local code=$?
   trap - EXIT INT TERM
-  for pid in "${bridge_pid:-}" "${opencode_pid:-}" "${openclaw_pid:-}"; do
+  for pid in "${approver_pid:-}" "${bridge_pid:-}" "${opencode_pid:-}" "${openclaw_pid:-}"; do
     if [[ -n "${pid}" ]] && kill -0 "${pid}" >/dev/null 2>&1; then
       kill "${pid}" >/dev/null 2>&1 || true
     fi
@@ -193,9 +253,15 @@ wait_for_port "${OPENCODE_BRIDGE_PORT}"
 ) > >(sed 's/^/[openclaw] /') 2>&1 &
 openclaw_pid=$!
 
+(
+  auto_approve_first_device
+) > >(sed 's/^/[pairing] /') 2>&1 &
+approver_pid=$!
+
 echo "all-in-one stack started"
 echo "dashboard: http://127.0.0.1:${OPENCLAW_GATEWAY_PORT}"
 echo "bridge: http://127.0.0.1:${OPENCODE_BRIDGE_PORT}/v1"
 echo "runtime credentials: ${RUNTIME_ENV}"
+echo "auto-approve first device: ${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE}"
 
 wait -n "${opencode_pid}" "${bridge_pid}" "${openclaw_pid}"

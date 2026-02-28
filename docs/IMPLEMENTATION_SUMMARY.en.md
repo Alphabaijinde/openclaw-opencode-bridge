@@ -22,6 +22,7 @@ The main changes are:
 5. A host automation agent was added:
    - default `read-only`
    - optional `browser-write`
+6. The all-in-one runtime now auto-approves the first pending device to reduce first-run pairing friction
 
 ## Key Preconfiguration
 
@@ -70,6 +71,26 @@ http://127.0.0.1:18789/#token=<gateway-token>
 ```
 
 That lets the user open a dashboard URL that already contains the required authentication.
+
+## Why the First Device Is Auto-Approved by Default
+
+The most common first-run stall is:
+
+- the token is already configured
+- but the browser/device is not trusted yet
+- so the UI gets stuck on `pairing required`
+
+To make “open the page and chat” the default path, the all-in-one runtime now briefly polls for pending devices after startup:
+
+- if a paired device already exists, it does nothing
+- if no paired device exists yet and a pending device appears, it automatically approves the latest one
+- after a successful approval, it stops immediately, instead of approving future devices indefinitely
+
+Users can still turn this off with:
+
+```text
+OPENCLAW_AUTO_APPROVE_FIRST_DEVICE=0
+```
 
 ## Host Agent Design Boundary
 

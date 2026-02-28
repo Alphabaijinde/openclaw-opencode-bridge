@@ -12,6 +12,7 @@ HOST_HTTP_PROXY="${HOST_HTTP_PROXY:-${HTTP_PROXY:-}}"
 HOST_HTTPS_PROXY="${HOST_HTTPS_PROXY:-${HTTPS_PROXY:-}}"
 HOST_NO_PROXY="${HOST_NO_PROXY:-localhost,127.0.0.1,host.docker.internal}"
 HOST_AUTOMATION_BASE_URL="${HOST_AUTOMATION_BASE_URL:-http://host.docker.internal:4567}"
+OPENCLAW_AUTO_APPROVE_FIRST_DEVICE="${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE:-1}"
 AUTO_OPEN_DASHBOARD="${AUTO_OPEN_DASHBOARD:-1}"
 RUN_OPENCODE_LOGIN=0
 DOCKER_BIN=""
@@ -65,6 +66,7 @@ Environment overrides:
   HOST_HTTPS_PROXY=http://host:port
   HOST_NO_PROXY=localhost,127.0.0.1,host.docker.internal
   HOST_AUTOMATION_BASE_URL=http://host.docker.internal:4567
+  OPENCLAW_AUTO_APPROVE_FIRST_DEVICE=1
   AUTO_OPEN_DASHBOARD=1
 EOF
 }
@@ -229,6 +231,9 @@ fi
 if [[ -n "${HOST_AUTOMATION_BASE_URL}" ]]; then
   docker_args+=(-e "HOST_AUTOMATION_BASE_URL=${HOST_AUTOMATION_BASE_URL}")
 fi
+if [[ -n "${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE}" ]]; then
+  docker_args+=(-e "OPENCLAW_AUTO_APPROVE_FIRST_DEVICE=${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE}")
+fi
 
 "${DOCKER_BIN}" "${docker_args[@]}" "${IMAGE}"
 
@@ -259,6 +264,7 @@ if [[ -n "${RUNTIME_BRIDGE_API_KEY:-}" ]]; then
   echo "Bridge API key: ${RUNTIME_BRIDGE_API_KEY}"
 fi
 echo "Host automation base URL (optional): ${HOST_AUTOMATION_BASE_URL}"
+echo "Auto-approve first device: ${OPENCLAW_AUTO_APPROVE_FIRST_DEVICE}"
 echo "Start host read-only agent: ./scripts/start-host-automation-agent.sh"
 
 if [[ -n "${DASHBOARD_DIRECT_URL:-}" && "${AUTO_OPEN_DASHBOARD}" != "0" && -t 1 ]]; then

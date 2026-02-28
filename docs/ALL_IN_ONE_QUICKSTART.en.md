@@ -33,6 +33,7 @@ The installer does the following:
 8. Reads the runtime token and API key
 9. Prints a direct dashboard URL with the token already attached
 10. Opens the default browser automatically in interactive terminals
+11. Auto-approves the first pending device by default to reduce first-run pairing friction
 
 ## What You Get After Install
 
@@ -72,6 +73,7 @@ No extra provider setup is required first, and users do not need to manually pas
 - `opencode-bridge` provider
 - Default model: `opencode-bridge/opencode-local`
 - Mapping from `opencode-local` to the default free-model path in `opencode`
+- Automatic approval of the first pending device (enabled by default)
 
 ## When to Run `opencode auth login`
 
