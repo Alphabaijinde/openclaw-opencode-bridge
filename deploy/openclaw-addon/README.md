@@ -52,13 +52,13 @@ OpenClaw Dashboard default URL:
 http://127.0.0.1:18789/
 ```
 
-By default, `opencode` is built during compose and `opencode-bridge` uses the prebuilt image:
+By default, `opencode` is built during compose and `opencode-bridge` uses the `bridge-only` tag from the shared package:
 
 ```bash
 OPENCODE_IMAGE=openclaw-opencode-local:latest
 OPENCODE_PULL_POLICY=never
 OPENCODE_BUILD_CONTEXT=./docker/opencode-prebuilt
-OPENCODE_BRIDGE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest
+OPENCODE_BRIDGE_IMAGE=ghcr.io/alphabaijinde/openclaw-opencode-bridge:bridge-only
 ```
 
 Default host binding for bridge is localhost only:
@@ -79,7 +79,7 @@ docker compose build opencode-bridge
 
 - `openclaw-gateway` / `openclaw-cli`: OpenClaw official image (`OPENCLAW_IMAGE`, default `ghcr.io/openclaw/openclaw:latest`).
 - `opencode`: built locally by default into `openclaw-opencode-local:latest` from the bundled Dockerfile; users do not need a host `opencode` install.
-- `opencode-bridge`: prebuilt image by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`), local build optional.
+- `opencode-bridge`: prebuilt sidecar tag by default (`ghcr.io/alphabaijinde/openclaw-opencode-bridge:bridge-only`), local build optional.
 
 This means a standard startup includes all three runtime components:
 

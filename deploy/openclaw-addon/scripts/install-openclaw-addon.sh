@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--opencode-mode docker|local] [--non-interactive] [--auto-install] [--yes]
+  install-openclaw-addon.sh /path/to/openclaw [--opencode-bin /path/to/opencode] [--bridge-context /path/to/openclaw-opencode-bridge] [--opencode-mode docker|local] [--bridge-image <ref>] [--non-interactive] [--auto-install] [--yes]
 
 What it does:
   0) Checks local environment prerequisites
@@ -28,6 +28,7 @@ else
 fi
 OPENCODE_BIN="${OPENCODE_BINARY_PATH:-${OPENCODE_BIN_DEFAULT}}"
 BRIDGE_CONTEXT="${OPENCODE_BRIDGE_CONTEXT:-${BRIDGE_ROOT}}"
+BRIDGE_IMAGE="${OPENCODE_BRIDGE_IMAGE:-ghcr.io/alphabaijinde/openclaw-opencode-bridge:bridge-only}"
 OPENCLAW_REPO_URL="https://github.com/openclaw/openclaw.git"
 NON_INTERACTIVE=0
 AUTO_INSTALL=0
@@ -48,6 +49,11 @@ while [[ $# -gt 0 ]]; do
     --bridge-context)
       [[ $# -ge 2 ]] || { echo "Missing value for --bridge-context" >&2; exit 1; }
       BRIDGE_CONTEXT="$2"
+      shift 2
+      ;;
+    --bridge-image)
+      [[ $# -ge 2 ]] || { echo "Missing value for --bridge-image" >&2; exit 1; }
+      BRIDGE_IMAGE="$2"
       shift 2
       ;;
     --opencode-mode)
@@ -204,7 +210,7 @@ set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_API_KEY" "$(random_hex)"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PORT" "8787"
 set_env_default "${ENV_FILE}" "OPENCLAW_PORT_BIND_HOST" "127.0.0.1"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_CONTEXT" "${BRIDGE_CONTEXT}"
-set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_IMAGE" "ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest"
+set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_IMAGE" "${BRIDGE_IMAGE}"
 set_env_default "${ENV_FILE}" "OPENCODE_BRIDGE_PULL_POLICY" "missing"
 set_env_default "${ENV_FILE}" "OPENCODE_OPENAI_MODEL_ID" "opencode-local"
 set_env_default "${ENV_FILE}" "OPENCODE_DIRECTORY" "/workspace"

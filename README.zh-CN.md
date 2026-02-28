@@ -3,13 +3,34 @@
 [English](README.en.md) | [中文](README.zh-CN.md)
 
 本项目提供一个 OpenAI 兼容桥接层，把 OpenClaw 的请求转发到本地 `opencode serve`，用于接入 opencode 的免费 AI 路径。
-本仓库今后只向 GHCR 发布 `opencode-bridge` 镜像；`opencode` 仍然运行在 Docker 里，但默认在 `docker compose` 时使用仓库内置 Dockerfile 自动构建，因此用户只需要安装 Docker。
+本仓库现在只发布一个 GHCR package，但包含两个 tag：
 
-开源最小可用组合是三件套：
+- `latest`：单镜像 all-in-one（`openclaw + opencode + bridge`）
+- `bridge-only`：三容器模式下使用的 bridge sidecar tag
+
+## 一键安装（推荐）
+
+用户本地只需要 Docker。安装脚本会尽力自动安装 Docker、启动 Docker Desktop、拉取镜像、注入代理环境并启动容器：
+
+```bash
+git clone https://github.com/Alphabaijinde/openclaw-opencode-bridge.git
+cd openclaw-opencode-bridge
+./scripts/install-all-in-one.sh
+```
+
+`latest` 单镜像运行时已经内置：
 
 - OpenClaw（官方镜像）
-- opencode（Docker 构建容器，无需本机额外安装）
-- opencode-bridge（预构建镜像）
+- opencode
+- opencode-bridge
+
+首次使用免费 AI 路径时，仍需完成一次登录：
+
+```bash
+docker exec -it openclaw-opencode-all-in-one opencode auth login
+```
+
+## 三容器模式（高级）
 
 ## 核心能力
 
@@ -26,7 +47,7 @@ cd openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/install-openclaw-addon.sh /path/to/openclaw
 
 cd /path/to/openclaw
-docker compose pull openclaw-gateway opencode-bridge
+docker compose pull openclaw-gateway
 docker compose up -d --build
 docker compose exec opencode opencode auth login
 ../openclaw-opencode-bridge/deploy/openclaw-addon/scripts/select-opencode-model.sh /path/to/openclaw
@@ -43,8 +64,8 @@ OPENCODE_BRIDGE_PORT=8787
 ## 产物说明
 
 - `openclaw-gateway`：使用 OpenClaw 官方镜像
-- `opencode`：默认在 `docker compose` 时构建为本地 Docker 镜像 `openclaw-opencode-local:latest`（可手动改成你自己的镜像）
-- `opencode-bridge`：默认使用预构建镜像 `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`
+- `latest`：单镜像，内含 `openclaw + opencode + bridge`
+- `bridge-only`：只包含 bridge，用于三容器模式
 
 ## 文档入口
 

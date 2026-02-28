@@ -3,19 +3,40 @@
 [English](README.en.md) | [中文](README.zh-CN.md)
 
 This bridge exposes an OpenAI-compatible API for OpenClaw and forwards requests to a local `opencode serve` instance.
-This repo publishes only the `opencode-bridge` image to GHCR. The `opencode` service still runs in Docker, but the add-on builds it during compose from the bundled Dockerfile, so users only need Docker.
+This repo publishes a single GHCR package with two tags:
 
-For open-source deployment, the minimum runnable stack is:
+- `latest`: all-in-one image (`openclaw + opencode + bridge`) for one-command installs
+- `bridge-only`: bridge sidecar tag used by the three-container Docker add-on
+
+## One-click all-in-one (recommended)
+
+Users only need Docker. The installer can install Docker (best effort), pull the all-in-one image, apply proxy env, and start the container:
+
+```bash
+git clone https://github.com/Alphabaijinde/openclaw-opencode-bridge.git
+cd openclaw-opencode-bridge
+./scripts/install-all-in-one.sh
+```
+
+The all-in-one runtime includes:
 
 - OpenClaw (official image)
-- opencode (Docker container built during compose)
-- opencode-bridge (prebuilt image)
+- opencode
+- opencode-bridge
+
+First-time free-AI auth still requires:
+
+```bash
+docker exec -it openclaw-opencode-all-in-one opencode auth login
+```
+
+## Three-container add-on (advanced)
 
 ## Open Source Guide
 
 - Quick Docker install: `deploy/openclaw-addon/scripts/install-openclaw-addon.sh`
 - Environment check: `deploy/openclaw-addon/scripts/check-environment.sh`
-- GHCR image (bridge only): `ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest`
+- GHCR package: `ghcr.io/alphabaijinde/openclaw-opencode-bridge`
 - Release notes v0.1.4: `docs/RELEASE_NOTES_v0.1.4.md`
 - Chinese playbook: `docs/OPEN_SOURCE_PLAYBOOK.zh-CN.md`
 - Release checklist (zh-CN): `docs/RELEASE_CHECKLIST.zh-CN.md`
@@ -42,7 +63,7 @@ cd openclaw-opencode-bridge/deploy/openclaw-addon
 ./scripts/check-environment.sh
 ./scripts/install-openclaw-addon.sh /path/to/openclaw
 cd /path/to/openclaw
-docker compose pull openclaw-gateway opencode-bridge
+docker compose pull openclaw-gateway
 docker compose up -d --build
 docker compose exec opencode opencode auth login
 ../openclaw-opencode-bridge/deploy/openclaw-addon/scripts/select-opencode-model.sh /path/to/openclaw

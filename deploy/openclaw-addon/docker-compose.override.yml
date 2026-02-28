@@ -85,7 +85,7 @@ services:
   opencode-bridge:
     # Default: use prebuilt GHCR image.
     # For local source build, keep OPENCODE_BRIDGE_CONTEXT and run `docker compose build opencode-bridge`.
-    image: ${OPENCODE_BRIDGE_IMAGE:-ghcr.io/alphabaijinde/openclaw-opencode-bridge:latest}
+    image: ${OPENCODE_BRIDGE_IMAGE:-ghcr.io/alphabaijinde/openclaw-opencode-bridge:bridge-only}
     pull_policy: ${OPENCODE_BRIDGE_PULL_POLICY:-always}
     build:
       context: ${OPENCODE_BRIDGE_CONTEXT:-./opencode-bridge}
