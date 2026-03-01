@@ -130,6 +130,17 @@ That enables:
 - reloading the current tab
 - switching tabs
 
+If you need the first desktop-write subset, use:
+
+```bash
+HOST_AUTOMATION_MODE=desktop-write ./scripts/start-host-automation-agent.sh
+```
+
+The current desktop-write scope only allows:
+
+- app activation
+- raising a specific window
+
 For the full operational sequence, see:
 
 - `docs/HOST_ACCESS_PLAYBOOK.en.md`

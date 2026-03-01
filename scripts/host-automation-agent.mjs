@@ -62,6 +62,10 @@ function canBrowserWrite() {
   return modeAtLeast("browser-write");
 }
 
+function canDesktopWrite() {
+  return modeAtLeast("desktop-write");
+}
+
 function appleScriptString(value) {
   return `"${String(value)
     .replace(/\\/g, "\\\\")
@@ -547,6 +551,85 @@ async function selectBrowserTab({ appName, windowIndex, tabIndex }) {
   };
 }
 
+async function activateDesktopApp(appName) {
+  if (typeof appName !== "string" || !appName.trim()) {
+    const error = new Error("app is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const targetApp = appName.trim();
+  await execFileText("/usr/bin/open", ["-a", targetApp], {
+    timeout: 10000,
+  });
+
+  return {
+    ok: true,
+    action: "activate-app",
+    appName: targetApp,
+  };
+}
+
+async function focusDesktopWindow({ appName, windowIndex }) {
+  if (typeof appName !== "string" || !appName.trim()) {
+    const error = new Error("app is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const targetApp = appName.trim();
+  const hasExplicitWindowIndex = windowIndex !== undefined && windowIndex !== null;
+  const targetWindow = hasExplicitWindowIndex ? Number(windowIndex) : null;
+  if (hasExplicitWindowIndex && (!Number.isInteger(targetWindow) || targetWindow < 1)) {
+    const error = new Error("windowIndex must be a positive integer");
+    error.status = 400;
+    throw error;
+  }
+
+  const lines = [
+    'tell application "System Events"',
+    `if not (exists process ${appleScriptString(targetApp)}) then error "App is not running"`,
+    `tell process ${appleScriptString(targetApp)}`,
+    "set frontmost to true",
+    'if (count of windows) = 0 then error "No accessible windows are available"',
+  ];
+  if (hasExplicitWindowIndex) {
+    lines.push(`if (count of windows) < ${targetWindow} then error "Window index out of range"`);
+    lines.push(`perform action "AXRaise" of window ${targetWindow}`);
+  } else {
+    lines.push('perform action "AXRaise" of front window');
+  }
+  lines.push("end tell", "end tell");
+
+  try {
+    await runAppleScript(lines);
+  } catch (error) {
+    const details = String(error?.stderr || error?.message || "");
+    if (details.includes("App is not running")) {
+      throw error;
+    }
+
+    await activateDesktopApp(targetApp);
+    return {
+      ok: true,
+      action: "focus-window",
+      appName: targetApp,
+      windowIndex: targetWindow,
+      raised: false,
+      fallback: "activate-app",
+      fallbackReason: details || "window-raise-unavailable",
+    };
+  }
+
+  return {
+    ok: true,
+    action: "focus-window",
+    appName: targetApp,
+    windowIndex: targetWindow,
+    raised: true,
+  };
+}
+
 async function systemInfo() {
   return {
     mode: MODE,
@@ -603,6 +686,7 @@ async function handleRequest(req, res) {
         systemRead: true,
         screenshot: ALLOW_SCREENSHOT,
         browserWrite: canBrowserWrite(),
+        desktopWrite: canDesktopWrite(),
         writeActions: canBrowserWrite(),
       },
     });
@@ -672,6 +756,37 @@ async function handleRequest(req, res) {
           appName: body.app,
           windowIndex: body.windowIndex,
           tabIndex: body.tabIndex,
+        }),
+      );
+    }
+
+    if (url.pathname === "/v1/desktop/activate-app") {
+      if (!canDesktopWrite()) {
+        return json(res, 403, {
+          error: {
+            message: "desktop-write mode is required",
+            type: "invalid_request_error",
+          },
+        });
+      }
+      return json(res, 200, await activateDesktopApp(body.app));
+    }
+
+    if (url.pathname === "/v1/desktop/focus-window") {
+      if (!canDesktopWrite()) {
+        return json(res, 403, {
+          error: {
+            message: "desktop-write mode is required",
+            type: "invalid_request_error",
+          },
+        });
+      }
+      return json(
+        res,
+        200,
+        await focusDesktopWindow({
+          appName: body.app,
+          windowIndex: body.windowIndex,
         }),
       );
     }

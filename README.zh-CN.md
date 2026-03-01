@@ -101,6 +101,19 @@ curl -X POST "http://127.0.0.1:4567/v1/browser/open-url?token=<shared-token>" \
   -d '{"app":"Google Chrome","url":"https://www.baidu.com","newTab":true}'
 ```
 
+如果你需要第一个 `desktop-write` 子集，可以升级到：
+
+```bash
+HOST_AUTOMATION_MODE=desktop-write ./scripts/start-host-automation-agent.sh
+```
+
+当前只开放非常有限的桌面写操作：
+
+- `POST /v1/desktop/activate-app`
+- `POST /v1/desktop/focus-window`
+
+这一步只允许激活应用和把指定窗口抬到前台，仍然不开放鼠标点击和键盘输入。
+
 ## 三容器模式（高级）
 
 ## 核心能力

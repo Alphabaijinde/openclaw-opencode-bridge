@@ -128,6 +128,17 @@ HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
 - 刷新当前标签页
 - 切换标签页
 
+如果你需要第一个桌面写操作子集，可以改成：
+
+```bash
+HOST_AUTOMATION_MODE=desktop-write ./scripts/start-host-automation-agent.sh
+```
+
+当前只开放：
+
+- 激活应用
+- 将指定窗口抬到前台
+
 完整操作说明见：
 
 - `docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`

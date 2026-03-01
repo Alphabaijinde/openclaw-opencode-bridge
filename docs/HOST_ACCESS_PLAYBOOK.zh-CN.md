@@ -172,6 +172,8 @@ HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
 - 打开宿主机浏览器 URL
 - 刷新宿主机浏览器标签页
 - 切换宿主机浏览器标签页
+- 激活宿主机应用
+- 将宿主机指定窗口抬到前台
 
 当前还没有开放：
 
@@ -180,4 +182,9 @@ HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
 - 任意桌面控件操作
 - 任意宿主机命令执行
 
-这些属于后续的 `desktop-write` / `system-write` 范围。
+当前新增的第一个 `desktop-write` 子集只包含：
+
+- `POST /v1/desktop/activate-app`
+- `POST /v1/desktop/focus-window`
+
+仍然没有开放鼠标点击和键盘输入。更高风险的桌面控制和宿主机命令执行，仍然属于后续范围。

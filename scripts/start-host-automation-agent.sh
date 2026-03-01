@@ -34,6 +34,9 @@ echo "  browser:  http://host.docker.internal:${HOST_AUTOMATION_PORT}/v1/browser
 if [[ "${HOST_AUTOMATION_MODE}" != "read-only" ]]; then
   echo "  browser write: POST http://host.docker.internal:${HOST_AUTOMATION_PORT}/v1/browser/open-url?token=${HOST_AUTOMATION_TOKEN}"
 fi
+if [[ "${HOST_AUTOMATION_MODE}" == "desktop-write" || "${HOST_AUTOMATION_MODE}" == "system-write" ]]; then
+  echo "  desktop write: POST http://host.docker.internal:${HOST_AUTOMATION_PORT}/v1/desktop/activate-app?token=${HOST_AUTOMATION_TOKEN}"
+fi
 echo
 echo "macOS permissions that may be requested:"
 echo "  - Automation"
@@ -43,7 +46,7 @@ echo
 echo "Modes:"
 echo "  - read-only     (default)"
 echo "  - browser-write (open URL / activate / reload / switch tabs)"
-echo "  - desktop-write (reserved)"
+echo "  - desktop-write (browser-write + activate app / focus window)"
 echo "  - system-write  (reserved)"
 echo
 

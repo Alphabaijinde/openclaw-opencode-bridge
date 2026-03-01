@@ -101,6 +101,19 @@ curl -X POST "http://127.0.0.1:4567/v1/browser/open-url?token=<shared-token>" \
   -d '{"app":"Google Chrome","url":"https://www.baidu.com","newTab":true}'
 ```
 
+If you need the first `desktop-write` subset, upgrade to:
+
+```bash
+HOST_AUTOMATION_MODE=desktop-write ./scripts/start-host-automation-agent.sh
+```
+
+The current desktop-write scope is intentionally narrow:
+
+- `POST /v1/desktop/activate-app`
+- `POST /v1/desktop/focus-window`
+
+This only allows app activation and raising a specific window. It still does not expose mouse clicks or keyboard input.
+
 ## Three-container add-on (advanced)
 
 ## Open Source Guide

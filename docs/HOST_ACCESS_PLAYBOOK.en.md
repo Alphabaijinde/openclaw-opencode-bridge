@@ -172,6 +172,8 @@ Currently supported:
 - open URLs in the host browser
 - reload host browser tabs
 - switch host browser tabs
+- activate host apps
+- raise a specific host window
 
 Not currently exposed:
 
@@ -180,4 +182,9 @@ Not currently exposed:
 - arbitrary desktop widget interaction
 - arbitrary host command execution
 
-Those remain in the future `desktop-write` / `system-write` scope.
+The first `desktop-write` subset now includes:
+
+- `POST /v1/desktop/activate-app`
+- `POST /v1/desktop/focus-window`
+
+Mouse clicks, keyboard input, broader desktop control, and arbitrary host command execution remain out of scope for now.
