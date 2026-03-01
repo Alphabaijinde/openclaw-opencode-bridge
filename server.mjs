@@ -16,6 +16,10 @@ const DEFAULT_PROVIDER_ID = env.OPENCODE_PROVIDER_ID || "";
 const DEFAULT_MODEL_ID = env.OPENCODE_MODEL_ID || "";
 const DEFAULT_AGENT = env.OPENCODE_AGENT || "";
 const DEFAULT_SYSTEM = env.OPENCODE_SYSTEM || "";
+const OPENCODE_SESSION_TIMEOUT_MS = Number(env.OPENCODE_SESSION_TIMEOUT_MS || 15000);
+const OPENCODE_MESSAGE_TIMEOUT_MS = Number(env.OPENCODE_MESSAGE_TIMEOUT_MS || 60000);
+const OPENCODE_RETRY_COUNT = Number(env.OPENCODE_RETRY_COUNT || 1);
+const OPENCODE_RETRY_DELAY_MS = Number(env.OPENCODE_RETRY_DELAY_MS || 750);
 
 let modelMap = {};
 if (env.MODEL_MAP_JSON) {
@@ -101,12 +105,11 @@ function opencodeUrl(pathname) {
   return url;
 }
 
-async function opencodeFetch(pathname, init = {}) {
-  const res = await fetch(opencodeUrl(pathname), {
-    ...init,
-    headers: opencodeHeaders(init.headers || {}),
-  });
-  const text = await res.text();
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseResponseBody(text) {
   let data = null;
   if (text) {
     try {
@@ -115,6 +118,50 @@ async function opencodeFetch(pathname, init = {}) {
       data = text;
     }
   }
+  return data;
+}
+
+function isAbortLikeError(error) {
+  return error?.name === "AbortError" || error?.code === "ABORT_ERR";
+}
+
+async function opencodeFetch(pathname, init = {}, options = {}) {
+  const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 0;
+  const controller = timeoutMs > 0 ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+  let res;
+  try {
+    res = await fetch(opencodeUrl(pathname), {
+      ...init,
+      headers: opencodeHeaders(init.headers || {}),
+      signal: controller ? controller.signal : init.signal,
+    });
+  } catch (error) {
+    if (timer) clearTimeout(timer);
+    if (isAbortLikeError(error)) {
+      const timeoutError = new Error(`opencode timeout after ${timeoutMs}ms`);
+      timeoutError.status = 504;
+      timeoutError.code = "OPENCODE_TIMEOUT";
+      throw timeoutError;
+    }
+    throw error;
+  }
+  let text;
+  try {
+    text = await res.text();
+  } catch (error) {
+    if (timer) clearTimeout(timer);
+    if (isAbortLikeError(error)) {
+      const timeoutError = new Error(`opencode timeout after ${timeoutMs}ms`);
+      timeoutError.status = 504;
+      timeoutError.code = "OPENCODE_TIMEOUT";
+      throw timeoutError;
+    }
+    throw error;
+  }
+  if (timer) clearTimeout(timer);
+  const data = parseResponseBody(text);
   if (!res.ok) {
     const msg =
       (data && typeof data === "object" && (data.message || data.error?.message)) ||
@@ -194,6 +241,13 @@ function extractAssistantText(opencodeResponse) {
     .filter((p) => p && p.type === "text" && typeof p.text === "string")
     .map((p) => p.text)
     .join("");
+}
+
+function summarizePartTypes(opencodeResponse) {
+  const parts = Array.isArray(opencodeResponse?.parts) ? opencodeResponse.parts : [];
+  return parts
+    .map((part) => (part && typeof part === "object" && part.type ? String(part.type) : "unknown"))
+    .filter(Boolean);
 }
 
 function toOpenAICompletion({ reqBody, content, usage }) {
@@ -279,6 +333,8 @@ async function createAndPromptOpencode(reqBody) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title: "openclaw-bridge" }),
+  }, {
+    timeoutMs: OPENCODE_SESSION_TIMEOUT_MS,
   });
 
   const body = {
@@ -292,9 +348,57 @@ async function createAndPromptOpencode(reqBody) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+  }, {
+    timeoutMs: OPENCODE_MESSAGE_TIMEOUT_MS,
   });
 
   return response;
+}
+
+function shouldRetryOpencodeError(error) {
+  const status = Number(error?.status) || 0;
+  if (error?.code === "OPENCODE_TIMEOUT") return false;
+  return status === 408 || status === 429 || status >= 500;
+}
+
+async function createAndPromptOpencodeWithRetry(reqBody) {
+  const maxAttempts = Math.max(1, OPENCODE_RETRY_COUNT + 1);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const opencodeResp = await createAndPromptOpencode(reqBody);
+      const content = extractAssistantText(opencodeResp);
+      if (content && content.trim()) {
+        return {
+          opencodeResp,
+          content,
+          usage: opencodeResp?.info?.tokens,
+        };
+      }
+
+      const error = new Error("Model returned no assistant text");
+      error.status = 502;
+      error.code = "EMPTY_ASSISTANT_TEXT";
+      error.payload = {
+        finish: opencodeResp?.info?.finish || null,
+        partTypes: summarizePartTypes(opencodeResp),
+      };
+      throw error;
+    } catch (error) {
+      lastError = error;
+      const canRetry = attempt < maxAttempts && (error.code === "EMPTY_ASSISTANT_TEXT" || shouldRetryOpencodeError(error));
+      if (!canRetry) break;
+      console.warn(
+        `[bridge] retrying opencode request attempt=${attempt + 1}/${maxAttempts} reason=${error.code || error.message}`,
+      );
+      if (OPENCODE_RETRY_DELAY_MS > 0) {
+        await sleep(OPENCODE_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 async function handleChatCompletions(req, res) {
@@ -309,9 +413,7 @@ async function handleChatCompletions(req, res) {
   }
 
   try {
-    const opencodeResp = await createAndPromptOpencode(reqBody);
-    const content = extractAssistantText(opencodeResp);
-    const usage = opencodeResp?.info?.tokens;
+    const { content, usage } = await createAndPromptOpencodeWithRetry(reqBody);
 
     if (reqBody.stream) {
       return writeOpenAIStream(res, reqBody, content);
