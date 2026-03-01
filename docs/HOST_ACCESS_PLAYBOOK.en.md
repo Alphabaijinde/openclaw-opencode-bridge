@@ -1,5 +1,9 @@
 # Host Access Playbook
 
+If you want the current capability list, usage paths, and planned next steps first, start here:
+
+- `docs/CAPABILITY_GUIDE.en.md`
+
 ## The Core Point
 
 The current “OpenClaw can access the host browser” capability is not provided by the Docker image alone. It is built from two parts:

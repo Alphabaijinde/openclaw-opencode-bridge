@@ -37,6 +37,7 @@ docker exec -it openclaw-opencode-all-in-one opencode auth login
 更完整的傻瓜式安装说明见：
 
 - `docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
+- `docs/CAPABILITY_GUIDE.zh-CN.md`
 - `docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
 - `docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
 
@@ -154,6 +155,7 @@ OPENCODE_BRIDGE_PORT=8787
 ## 文档入口
 
 - 一键安装快速上手：`docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
+- 当前能力总览：`docs/CAPABILITY_GUIDE.zh-CN.md`
 - 实现说明：`docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
 - 宿主机访问说明：`docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
 - 安装脚本：`deploy/openclaw-addon/scripts/install-openclaw-addon.sh`

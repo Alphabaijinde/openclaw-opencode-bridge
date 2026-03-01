@@ -37,6 +37,7 @@ docker exec -it openclaw-opencode-all-in-one opencode auth login
 For the full zero-to-chat walkthrough, see:
 
 - `docs/ALL_IN_ONE_QUICKSTART.en.md`
+- `docs/CAPABILITY_GUIDE.en.md`
 - `docs/IMPLEMENTATION_SUMMARY.en.md`
 - `docs/HOST_ACCESS_PLAYBOOK.en.md`
 

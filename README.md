@@ -22,5 +22,7 @@ Default package layout:
 - Implementation summary (zh-CN): `docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
 - Host access playbook (en): `docs/HOST_ACCESS_PLAYBOOK.en.md`
 - Host access playbook (zh-CN): `docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
+- Capability guide (en): `docs/CAPABILITY_GUIDE.en.md`
+- 能力总览（中文）: `docs/CAPABILITY_GUIDE.zh-CN.md`
 - Release notes: `docs/RELEASE_NOTES_v0.1.4.md`
 - GHCR image package: `ghcr.io/alphabaijinde/openclaw-opencode-bridge`
