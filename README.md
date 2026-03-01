@@ -20,5 +20,7 @@ Default package layout:
 - All-in-one quickstart (zh-CN): `docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
 - Implementation summary (en): `docs/IMPLEMENTATION_SUMMARY.en.md`
 - Implementation summary (zh-CN): `docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
+- Host access playbook (en): `docs/HOST_ACCESS_PLAYBOOK.en.md`
+- Host access playbook (zh-CN): `docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
 - Release notes: `docs/RELEASE_NOTES_v0.1.4.md`
 - GHCR image package: `ghcr.io/alphabaijinde/openclaw-opencode-bridge`

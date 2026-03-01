@@ -97,6 +97,11 @@ docker exec -it openclaw-opencode-all-in-one opencode auth login
 
 ## 宿主机联动（可选）
 
+如果你希望容器里的 OpenClaw 读取或控制宿主机，记住这是“两段式”：
+
+1. `latest` 镜像负责容器内运行和默认配置
+2. 宿主机代理脚本负责真正访问宿主机
+
 如果你希望容器里的 OpenClaw 读取宿主机信息，先在宿主机启动代理：
 
 ```bash
@@ -122,6 +127,10 @@ HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
 - 打开 URL
 - 刷新当前标签页
 - 切换标签页
+
+完整操作说明见：
+
+- `docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
 
 ## 故障排查
 

@@ -38,6 +38,7 @@ docker exec -it openclaw-opencode-all-in-one opencode auth login
 
 - `docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
 - `docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
+- `docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
 
 ## 宿主机只读代理（浏览器 / 桌面 / 系统）
 
@@ -90,6 +91,8 @@ HOST_AUTOMATION_MODE=browser-write ./scripts/start-host-automation-agent.sh
 - `POST /v1/browser/reload`
 - `POST /v1/browser/select-tab`
 
+注意：宿主机访问能力不是只靠 `latest` 镜像本身，还需要宿主机本地运行 `scripts/host-automation-agent.mjs` / `scripts/start-host-automation-agent.sh`。镜像负责容器内配置和提示，宿主机脚本负责真正执行宿主机动作。
+
 示例：
 
 ```bash
@@ -139,6 +142,7 @@ OPENCODE_BRIDGE_PORT=8787
 
 - 一键安装快速上手：`docs/ALL_IN_ONE_QUICKSTART.zh-CN.md`
 - 实现说明：`docs/IMPLEMENTATION_SUMMARY.zh-CN.md`
+- 宿主机访问说明：`docs/HOST_ACCESS_PLAYBOOK.zh-CN.md`
 - 安装脚本：`deploy/openclaw-addon/scripts/install-openclaw-addon.sh`
 - 环境检测：`deploy/openclaw-addon/scripts/check-environment.sh`
 - 模型选择：`deploy/openclaw-addon/scripts/select-opencode-model.sh`

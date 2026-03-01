@@ -38,6 +38,7 @@ For the full zero-to-chat walkthrough, see:
 
 - `docs/ALL_IN_ONE_QUICKSTART.en.md`
 - `docs/IMPLEMENTATION_SUMMARY.en.md`
+- `docs/HOST_ACCESS_PLAYBOOK.en.md`
 
 ## Read-only host agent (browser / desktop / system)
 
@@ -89,6 +90,8 @@ This enables browser write actions only. It does not enable desktop-write or sys
 - `POST /v1/browser/open-url`
 - `POST /v1/browser/reload`
 - `POST /v1/browser/select-tab`
+
+Important: host access is not provided by the `latest` image alone. It also requires the host-side scripts `scripts/host-automation-agent.mjs` / `scripts/start-host-automation-agent.sh`. The image configures the container-side hints; the host scripts execute the real host actions.
 
 Example:
 

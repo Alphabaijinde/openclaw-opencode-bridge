@@ -99,6 +99,11 @@ when:
 
 ## Host Integration (Optional)
 
+If you want containerized OpenClaw to inspect or control the host, remember that this is a two-part setup:
+
+1. the `latest` image handles the container-side runtime and defaults
+2. the host agent scripts perform the actual host-side actions
+
 If you want containerized OpenClaw to inspect host state, start the host agent on the host machine:
 
 ```bash
@@ -124,6 +129,10 @@ That enables:
 - opening URLs
 - reloading the current tab
 - switching tabs
+
+For the full operational sequence, see:
+
+- `docs/HOST_ACCESS_PLAYBOOK.en.md`
 
 ## Troubleshooting
 
