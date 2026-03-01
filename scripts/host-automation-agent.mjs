@@ -431,14 +431,16 @@ async function openBrowserUrl({ appName, targetUrl, newTab = true }) {
   const targetApp = pickBrowserApp(appName);
   const safeUrl = normalizeUrl(targetUrl);
 
-  if (CHROME_FAMILY_APPS.has(targetApp)) {
+  if (newTab) {
+    await execFileText("/usr/bin/open", ["-a", targetApp, safeUrl], {
+      timeout: 10000,
+    });
+  } else if (CHROME_FAMILY_APPS.has(targetApp)) {
     await runAppleScript([
       `tell application ${appleScriptString(targetApp)}`,
       "activate",
       "if (count of windows) = 0 then make new window",
-      newTab
-        ? `set newTabRef to make new tab at end of tabs of front window with properties {URL:${appleScriptString(safeUrl)}}`
-        : `set URL of active tab of front window to ${appleScriptString(safeUrl)}`,
+      `set URL of active tab of front window to ${appleScriptString(safeUrl)}`,
       "end tell",
     ]);
   } else if (targetApp === "Safari") {
@@ -446,9 +448,7 @@ async function openBrowserUrl({ appName, targetUrl, newTab = true }) {
       'tell application "Safari"',
       "activate",
       "if (count of windows) = 0 then make new document",
-      newTab
-        ? `tell front window to set current tab to (make new tab with properties {URL:${appleScriptString(safeUrl)}})`
-        : `set URL of current tab of front window to ${appleScriptString(safeUrl)}`,
+      `set URL of current tab of front window to ${appleScriptString(safeUrl)}`,
       "end tell",
     ]);
   } else {
